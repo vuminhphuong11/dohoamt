@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { OrbitControls } from 'D:/FinalProject/FinalProject/src/OrbitControls.js';
-import { TeapotGeometry } from "D:/FinalProject/FinalProject/src/TeapotGeometry.js";
+import { OrbitControls } from '/OrbitControls.js';
+import { TeapotGeometry } from "/TeapotGeometry.js";
 
 
 export function init(container) {

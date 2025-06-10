@@ -17,23 +17,20 @@ floor.position.y = -0.05;
 scene.add(floor);
 
 // Tạo tường
-const leftwallMaterial = new THREE.MeshStandardMaterial({ color: 0xd0ccc9 });
-const rightwallMaterial = new THREE.MeshStandardMaterial({ color: 0xd0ccc9 });
-const backwallMaterial = new THREE.MeshStandardMaterial({ color: 0xe3dede });
-
-const leftWall = new THREE.Mesh(new THREE.BoxGeometry(0.1, 5, 10), leftwallMaterial);
+const wallMaterial = new THREE.MeshStandardMaterial({ color: 0xd0ccc9 });
+const leftWall = new THREE.Mesh(new THREE.BoxGeometry(0.1, 5, 10), wallMaterial);
 leftWall.position.set(-5, 2.5, 0);
 scene.add(leftWall);
 
-const rightWall = new THREE.Mesh(new THREE.BoxGeometry(0.1, 5, 10), rightwallMaterial);
+const rightWall = new THREE.Mesh(new THREE.BoxGeometry(0.1, 5, 10), wallMaterial);
 rightWall.position.set(5, 2.5, 0);  
 scene.add(rightWall);
 
-const backWall = new THREE.Mesh(new THREE.BoxGeometry(10, 5, 0.1), backwallMaterial);
+const backWall = new THREE.Mesh(new THREE.BoxGeometry(10, 5, 0.1), wallMaterial);
 backWall.position.set(0, 2.5, -5);
 scene.add(backWall);
 
-// Tạo bức tường có cửa trước mặt
+// Tạo tường trước với cửa
 const frontWallMaterial = new THREE.MeshStandardMaterial({ color: 0xe3dede });
 const frontWallLeft = new THREE.Mesh(new THREE.BoxGeometry(3, 5, 0.1), frontWallMaterial);
 frontWallLeft.position.set(-3.5, 2.5, 5);
@@ -43,12 +40,11 @@ const frontWallRight = new THREE.Mesh(new THREE.BoxGeometry(4.5, 5, 0.1), frontW
 frontWallRight.position.set(2.75, 2.5, 5);
 scene.add(frontWallRight);
 
-// Tạo phần tường trên cửa
 const frontWallTop = new THREE.Mesh(new THREE.BoxGeometry(4, 1, 0.1), frontWallMaterial);
 frontWallTop.position.set(0, 4.5, 5);
 scene.add(frontWallTop);
 
-// Tạo cửa mở
+// Tạo cửa
 const doorMaterial = new THREE.MeshStandardMaterial({ color: 0x8B4513 });
 const door = new THREE.Mesh(new THREE.BoxGeometry(2.75, 4, 0.1), doorMaterial);
 door.position.set(-0.2, 2, 5.5);
@@ -68,90 +64,89 @@ document.addEventListener('keydown', (event) => {
     }
 });
 
-// Tạo tường chia phòng bên phải 30-70
-const partitionWallMaterial = new THREE.MeshStandardMaterial({ color: 0xd0ccc9 });
-const partitionWall = new THREE.Mesh(new THREE.BoxGeometry(3, 5, 0.5), partitionWallMaterial);
+// Tạo tường phân chia
+const partitionWall = new THREE.Mesh(new THREE.BoxGeometry(3, 5, 0.5), wallMaterial);
 partitionWall.position.set(3.5, 2.5, -1);
 scene.add(partitionWall);
 
-// Tạo trần nhà
-const ceilingMaterial = new THREE.MeshStandardMaterial({ color: 0xbbb9b5 });
-const ceiling = new THREE.Mesh(new THREE.BoxGeometry(10, 0.1, 10), ceilingMaterial);
-ceiling.position.y = 5;
-scene.add(ceiling);
+// Tạo toilet
+const toiletMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 0.2, roughness: 0.1 });
+const toiletBase = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.7, 0.8), toiletMaterial);
+toiletBase.position.set(3.5, 0.5, -3);
+scene.add(toiletBase);
+
+
+const toiletTank = new THREE.Mesh(new THREE.BoxGeometry(0.5, 1.2, 0.8), toiletMaterial);
+toiletTank.position.set(4.5, 1.2, -3);
+scene.add(toiletTank);
 
 // Tạo bồn tắm
-const bathtubLength = 4.5;
-const bathtubWidth = 2.0;
-const bathtubHeight = 0.8;
-const bathtubDepth = 0.6; // Độ sâu của vùng trũng bên trong
-
-const bathtubShape = new THREE.Shape();
-const radius = 0.3;
-bathtubShape.moveTo(-bathtubWidth / 2 + radius, -bathtubLength / 2);
-bathtubShape.lineTo(bathtubWidth / 2 - radius, -bathtubLength / 2);
-bathtubShape.quadraticCurveTo(bathtubWidth / 2, -bathtubLength / 2, bathtubWidth / 2, -bathtubLength / 2 + radius);
-bathtubShape.lineTo(bathtubWidth / 2, bathtubLength / 2 - radius);
-bathtubShape.quadraticCurveTo(bathtubWidth / 2, bathtubLength / 2, bathtubWidth / 2 - radius, bathtubLength / 2);
-bathtubShape.lineTo(-bathtubWidth / 2 + radius, bathtubLength / 2);
-bathtubShape.quadraticCurveTo(-bathtubWidth / 2, bathtubLength / 2, -bathtubWidth / 2, bathtubLength / 2 - radius);
-bathtubShape.lineTo(-bathtubWidth / 2, -bathtubLength / 2 + radius);
-bathtubShape.quadraticCurveTo(-bathtubWidth / 2, -bathtubLength / 2, -bathtubWidth / 2 + radius, -bathtubLength / 2);
-
-const extrudeSettings = { 
-    depth: bathtubHeight, 
-    bevelEnabled: true, 
-    bevelSize: 0.1, 
-    bevelThickness: 0.1 
-};
-
-const bathtubGeometry = new THREE.ExtrudeGeometry(bathtubShape, extrudeSettings);
+const bathtubGeometry = new THREE.BoxGeometry(2.0, 0.8, 4.5);
 const bathtubMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 0.2, roughness: 0.1 });
 const bathtub = new THREE.Mesh(bathtubGeometry, bathtubMaterial);
-bathtub.rotation.set(-Math.PI / 2, -Math.PI, 0);
-bathtub.position.set(3.5, 1, 2);
-
-// Tạo vùng trũng bên trong
-const innerShape = new THREE.Shape();
-innerShape.moveTo(-bathtubWidth / 2 + 0.2, -bathtubLength / 2 + 0.2);
-innerShape.lineTo(bathtubWidth / 2 - 0.2, -bathtubLength / 2 + 0.2);
-innerShape.lineTo(bathtubWidth / 2 - 0.2, bathtubLength / 2 - 0.2);
-innerShape.lineTo(-bathtubWidth / 2 + 0.2, bathtubLength / 2 - 0.2);
-innerShape.lineTo(-bathtubWidth / 2 + 0.2, -bathtubLength / 2 + 0.2);
-
-const innerExtrudeSettings = { depth: bathtubDepth, bevelEnabled: false };
-const innerGeometry = new THREE.ExtrudeGeometry(innerShape, innerExtrudeSettings);
-const innerMaterial = new THREE.MeshStandardMaterial({ color: 0xdddddd });
-const innerBathtub = new THREE.Mesh(innerGeometry, innerMaterial);
-innerBathtub.rotation.set(-Math.PI / 2, -Math.PI, 0);
-innerBathtub.position.set(3.5, 1.1, 2); // Đặt vùng trũng vào trong bồn
-
+bathtub.position.set(3.5, 0.4, 2);
 scene.add(bathtub);
-scene.add(innerBathtub);
+
+// Thêm mặt phẳng nước để mô phỏng độ sâu
+const waterGeometry = new THREE.PlaneGeometry(1.8, 4.3);
+const waterMaterial = new THREE.MeshStandardMaterial({ color: 0x87CEFA, transparent: true, opacity: 0.5 });
+const water = new THREE.Mesh(waterGeometry, waterMaterial);
+water.rotation.x = -Math.PI / 2; // Đặt mặt phẳng nằm ngang
+water.position.set(3.5, 0.6, 2); // Đặt bên trong bồn tắm
+scene.add(water);
+
+// Tạo vòi nước và định vị lại
+const faucetMaterial = new THREE.MeshStandardMaterial({ color: 0x888888, metalness: 0.8, roughness: 0.2 });
+const faucetBase = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.3, 32), faucetMaterial);
+faucetBase.position.set(3.5, 0.8, -0.25); // Giữa chiều rộng, cạnh sau gần tường
+scene.add(faucetBase);
+
+const faucetHandle1 = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.05, 0.05), faucetMaterial);
+faucetHandle1.position.set(3.3, 0.85, -0.25);
+faucetHandle1.rotation.z = Math.PI / 4;
+scene.add(faucetHandle1);
+
+const faucetHandle2 = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.05, 0.05), faucetMaterial);
+faucetHandle2.position.set(3.7, 0.85, -0.25);
+faucetHandle2.rotation.z = -Math.PI / 4;
+scene.add(faucetHandle2);
+
+// Create light brown cabinet
+const cabinetGeometry = new THREE.BoxGeometry(0.8, 2, 4.5); // Width: 2, Height: 1.5, Depth: 0.5
+const cabinetMaterial = new THREE.MeshStandardMaterial({ color: 0xD2B48C }); // Light brown color
+const cabinet = new THREE.Mesh(cabinetGeometry, cabinetMaterial);
+cabinet.position.set(-4.5, 0, 0); // Positioned against the left wall (x = -4.5), centered at y = 0.75, z = 0
+scene.add(cabinet);
+
+// Create mirror above the cabinet
+const mirrorGeometry = new THREE.PlaneGeometry(4, 0.5); // Width: 1.5, Height: 1
+const mirrorMaterial = new THREE.MeshStandardMaterial({ color: 0xE0E0E0, metalness: 0.9, roughness: 0.1 }); // Reflective material
+const mirror = new THREE.Mesh(mirrorGeometry, mirrorMaterial);
+mirror.position.set(-4.95, 2, 0); // Positioned slightly in front of the wall (x = -4.95), at y = 2, z = 0
+mirror.rotation.y = Math.PI; // Rotate to face the room
+scene.add(mirror);
 
 // Thêm ánh sáng
-const ambientLight = new THREE.AmbientLight(0xffffff, 3); // Tăng cường độ sáng
+const ambientLight = new THREE.AmbientLight(0xffffff, 3);
 scene.add(ambientLight);
 
 // Đặt vị trí camera
-camera.position.set(0, 2, 12);// Đặt camera cách xa để nhìn thấy toàn bộ căn phòng
+camera.position.set(0, 2, 12);
 camera.lookAt(0, 2, 0);
 
-// Biến điều khiển
+// Điều khiển camera
 const moveSpeed = 0.1;
 const keys = {};
 let isMouseDown = false;
 let prevMouseX = 0;
 let prevMouseY = 0;
 const sensitivity = 0.002;
-const maxPitch = Math.PI / 2.5; // Giới hạn góc nhìn lên xuống
+const maxPitch = Math.PI / 2.5;
 const minPitch = -Math.PI / 2.5;
 
-// Xử lý phím bấm
 document.addEventListener('keydown', (event) => { keys[event.key.toLowerCase()] = true; });
 document.addEventListener('keyup', (event) => { keys[event.key.toLowerCase()] = false; });
 
-// Xử lý chuột
 document.addEventListener('mousedown', (event) => {
     if (event.button === 0) {
         isMouseDown = true;
@@ -168,18 +163,17 @@ document.addEventListener('mousemove', (event) => {
     const deltaX = event.clientX - prevMouseX;
     const deltaY = event.clientY - prevMouseY;
 
-    camera.rotation.y -= deltaX * sensitivity; // Quay trái/phải
-    camera.rotation.x = Math.max(minPitch, Math.min(maxPitch, camera.rotation.x - deltaY * sensitivity)); // Giới hạn góc nhìn
+    camera.rotation.y -= deltaX * sensitivity;
+    camera.rotation.x = Math.max(minPitch, Math.min(maxPitch, camera.rotation.x - deltaY * sensitivity));
 
     prevMouseX = event.clientX;
     prevMouseY = event.clientY;
 });
 
-// Cập nhật vị trí camera theo phím bấm
 function updateCameraPosition() {
     const forward = new THREE.Vector3();
     camera.getWorldDirection(forward);
-    forward.y = 0; // Giữ camera không bị nhấc lên/xuống khi đi
+    forward.y = 0;
     forward.normalize();
 
     const right = new THREE.Vector3();

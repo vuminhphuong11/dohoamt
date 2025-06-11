@@ -1,143 +1,168 @@
 import * as THREE from 'three';
-import { OrbitControls } from "/src/OrbitControls.js";
-import { TeapotGeometry } from "/src/TeapotGeometry.js";
-import { AudioListener, AudioLoader, Audio } from 'three';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
+
+// === Create Scene ===
+const scene = new THREE.Scene();
+
+// === Create Primary Camera ===
+const camera1 = new THREE.PerspectiveCamera(
+  75,
+  window.innerWidth / window.innerHeight,
+  0.1,
+  1000
+);
+camera1.position.set(0, 2, 5);
+
+// === Create Second Camera (Orbit View) ===
+const camera2 = new THREE.PerspectiveCamera(
+  75,
+  window.innerWidth / window.innerHeight,
+  0.1,
+  1000
+);
+camera2.position.set(15, 10, 15);
+camera2.lookAt(0, 2.5, 0);
+
+// === Create Renderer ===
+const renderer = new THREE.WebGLRenderer();
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.body.appendChild(renderer.domElement);
+
+// === Add Lights ===
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.2);
+scene.add(ambientLight);
+
+// === Create Materials ===
+const wallMaterial = new THREE.MeshStandardMaterial({ color: 0xb0c4de, side: THREE.DoubleSide });
+const floorMaterial = new THREE.MeshStandardMaterial({ color: 0xE6E4D8, side: THREE.DoubleSide });
+const ceilingMaterial = new THREE.MeshStandardMaterial({ color: 0xf5f5f5 });
+const tableMaterial = new THREE.MeshStandardMaterial({ color: 0x8B5A2B });
+const chairMaterial = new THREE.MeshStandardMaterial({ color: 0x654321 });
+
+// === Create Room (Planes) ===
+// Floor (Double-Sided)
+const floor = new THREE.Mesh(new THREE.BoxGeometry(10, 0.1, 10), floorMaterial);
+floor.position.y = -0.05; // half thickness below Y=0
+scene.add(floor);
+
+// Ceiling (One-Sided)
+const ceiling = new THREE.Mesh(new THREE.PlaneGeometry(10, 10), ceilingMaterial);
+ceiling.rotation.x = Math.PI / 2;
+ceiling.position.set(0, 5, 0);
+scene.add(ceiling);
+
+// Back Wall
+const backWall = new THREE.Mesh(new THREE.BoxGeometry(10, 5, 0.1), wallMaterial);
+backWall.position.set(0, 2.5, -4.95);
+scene.add(backWall);
+
+// Right Wall
+const rightWall = new THREE.Mesh(new THREE.BoxGeometry(10, 5, 0.1), wallMaterial);
+rightWall.rotation.y = -Math.PI / 2;
+rightWall.position.set(4.95, 2.5, 0);
+scene.add(rightWall);
+
+// Left Wall
+const leftWall = new THREE.Mesh(new THREE.BoxGeometry(10, 5, 0.1), wallMaterial);
+leftWall.rotation.y = Math.PI / 2;
+leftWall.position.set(-4.95, 2.5, 0);
+scene.add(leftWall);
+
+// === Create Table ===
+const tableTop = new THREE.Mesh(new THREE.BoxGeometry(1, 0.1, 2), tableMaterial);
+tableTop.position.set(0, 0.8, 0);
+scene.add(tableTop);
+
+const tableLegs = [];
+const legPositions = [
+  [-0.4, 0.4, -0.9],
+  [0.4, 0.4, -0.9],
+  [-0.4, 0.4, 0.9],
+  [0.4, 0.4, 0.9]
+];
+legPositions.forEach(pos => {
+  const leg = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.8, 0.1), tableMaterial);
+  leg.position.set(...pos);
+  scene.add(leg);
+  tableLegs.push(leg);
+});
+
+// === Create Chairs ===
+function createChair(x, z, rotationY) {
+  // Seat
+  const seat = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.1, 0.6), chairMaterial);
+  seat.position.set(x, 0.5, z);
+  seat.rotation.y = rotationY;
+  scene.add(seat);
+
+  // Backrest (aligned with back legs)
+  const backrest = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.6, 0.1), chairMaterial);
+  backrest.position.set(x - 0.25 * Math.sin(rotationY), 0.8, z - 0.25 * Math.cos(rotationY));
+  backrest.rotation.y = rotationY;
+  scene.add(backrest);
+
+  // Legs (4 legs properly placed, height reduced)
+  const legOffsets = [
+    [-0.2, -0.2],
+    [0.2, -0.2],
+    [-0.2, 0.2],
+    [0.2, 0.2]
+  ];
+  legOffsets.forEach(offset => {
+    const leg = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.5, 0.1), chairMaterial);
+    leg.position.set(x + offset[0], 0.2, z + offset[1]);
+    scene.add(leg);
+  });
+}
+
+// Left chair
+createChair(-0.8, 0, Math.PI / 2);
+// Right chair
+createChair(0.8, 0, -Math.PI / 2);
+
+// Add countertop to right corner
+const counterGeometry = new THREE.BoxGeometry(1.5, 1.7, 6);
+const counterMaterial = new THREE.MeshStandardMaterial({ color: 0x888888 });
+const counter = new THREE.Mesh(counterGeometry, counterMaterial);
+counter.position.set(4.2, 0.85, -1.95);
+scene.add(counter);
+
+/* Add window to left wall (vertical rectangle)
+const windowGeometry = new THREE.BoxGeometry(0.1, 1.3, 0.7); // Thin glass pane (depth = 0.05)
+const windowMaterial = new THREE.MeshPhysicalMaterial({
+  color: 0x87cefa,
+  transparent: true,
+  opacity: 0.5,
+  roughness: 0.1,
+  metalness: 0.2,
+  side: THREE.DoubleSide,
+  clearcoat: 1.0,
+  transmission: 1.0, // make it look like glass
+});
+const windowMesh = new THREE.Mesh(windowGeometry, windowMaterial);
+windowMesh.position.set(-4.95, 2.5, 0); // Slightly offset from the wall to avoid Z-fighting
+scene.add(windowMesh); */
 
 
+// Add fridge
+const fridgeGeometry = new THREE.BoxGeometry(1.5, 3, 1.5);
+const fridgeMaterial = new THREE.MeshStandardMaterial({ color: 0x888888 });
+const fridge = new THREE.Mesh(fridgeGeometry, fridgeMaterial);
+fridge.position.set(1.25, 1.5,-4.2);
+scene.add(fridge);
+
+// Add sink
+const sinkGeometry = new THREE.BoxGeometry(2.5, 1.7, 1.5);
+const sinkMaterial = new THREE.MeshStandardMaterial({ color: 0x888888 });
+const sink = new THREE.Mesh(sinkGeometry, sinkMaterial);
+sink.position.set(2.25, 0.85,-4.2);
+scene.add(sink);
 
 
-
-export function init(container) {
-    container.innerHTML = ''; // Xóa nội dung cũ
-    // Tạo Scene
-    const scene = new THREE.Scene();
-    // Tạo Camera
-    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    camera.position.set(7, 7, 7);
-    camera.lookAt(0,4,0);
-    // Tạo Renderer
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    container.appendChild(renderer.domElement);
-    // Điều khiển camera bằng chuột
-    const controls = new OrbitControls(camera, renderer.domElement);
-    controls.enableDamping = true;
-    controls.dampingFactor = 0.05;
-    controls.target.set(0, 0.5, 0);
-    controls.update();
-    // Ánh sáng
-    const light = new THREE.AmbientLight(0xffffff, 1);
-    scene.add(light);
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-    directionalLight.position.set(2, 5, 3);
-    scene.add(directionalLight);
-    // ================Sàn nhà===============
-    const floorMaterial = new THREE.MeshStandardMaterial({ color: 0x909090 });
-    const floorGeometry = new THREE.PlaneGeometry(13, 13);
-    const floor = new THREE.Mesh(floorGeometry, floorMaterial);
-    floor.rotation.x = -Math.PI / 2;
-    scene.add(floor);
-    // =================Tường===============
-    const wallMaterial = new THREE.MeshStandardMaterial({ color: 0xCCCCCC});
-    const wallGeometry = new THREE.PlaneGeometry(13, 6.5);
-    const frontWall = new THREE.Mesh(wallGeometry, wallMaterial);
-    frontWall.position.set(0,3.25, -6.5);
-    scene.add(frontWall);
-    const leftWall = new THREE.Mesh(wallGeometry, wallMaterial);
-    leftWall.rotation.y = Math.PI / 2;
-    leftWall.position.set(-6.5, 3.25, 0);
-    scene.add(leftWall);
-    // =================Bàn===================
-    const tableMaterial = new THREE.MeshStandardMaterial({ color: 0x8B4513 });
-    const tableGeometry = new THREE.BoxGeometry(3.3, 0.35, 1.9);
-    const table = new THREE.Mesh(tableGeometry, tableMaterial);
-    table.position.set(0, 1, 0);
-    const undertableGeometry = new THREE.BoxGeometry(2.5, 0.1, 1.5);
-    const undertable = new THREE.Mesh(undertableGeometry, tableMaterial);
-    undertable.position.set(0, 0.4, 0);
-    const legGeometry = new THREE.CylinderGeometry(0.1, 0.1, 1);
-    const legs = [];
-    for (let i of [-1.2, 1.2]) {
-        for (let j of [-0.7, 0.7]) {
-            const leg = new THREE.Mesh(legGeometry, tableMaterial);
-            leg.position.set(i, 0.5, j);
-            legs.push(leg);
-        }
-    }
-    const tableGroup = new THREE.Group();
-    tableGroup.add(table);
-    tableGroup.add(undertable);
-    legs.forEach(leg => tableGroup.add(leg));
-    tableGroup.position.set(1.5, 0, 2.5);//0.3,0,0.5
-    scene.add(tableGroup);
-    // =====================Sofa==========================
-    const sofaMaterial = new THREE.MeshStandardMaterial({color: 0xf5f5f5, roughness: 0.3, metalness: 0.05});
-    const cushionMaterial = new THREE.MeshStandardMaterial({ color: 0xd19c73, roughness: 0.5, metalness: 0.05 });
-    const seatGeometry = new THREE.BoxGeometry(3.8, 0.6, 1.6);
-    const seat = new THREE.Mesh(seatGeometry, cushionMaterial);
-    seat.position.set(0, 0.5, 0);
-    const backRestGeometry = new THREE.BoxGeometry(3.8, 1, 0.3);
-    const backRest = new THREE.Mesh(backRestGeometry, cushionMaterial);
-    backRest.position.set(0, 1.3, 0.65);
-    const armRestGeometry = new THREE.BoxGeometry(0.3, 1, 1.8);
-    const armRestLeft = new THREE.Mesh(armRestGeometry, cushionMaterial);
-    armRestLeft.position.set(-2, 0.7, 0);
-    const armRestRight = new THREE.Mesh(armRestGeometry, cushionMaterial);
-    armRestRight.position.set(2, 0.7, 0);
-    const legGeometry1 = new THREE.CylinderGeometry(0.1, 0.1, 0.2);
-    const legMaterial = new THREE.MeshStandardMaterial({ color: 0x2F4F4F });
-    const legFrontLeft = new THREE.Mesh(legGeometry1, legMaterial);
-    legFrontLeft.position.set(-1.5, 0.1, 0.7);
-    const legFrontRight = new THREE.Mesh(legGeometry1, legMaterial);
-    legFrontRight.position.set(1.5, 0.1, 0.7);
-    const legBackLeft = new THREE.Mesh(legGeometry1, legMaterial);
-    legBackLeft.position.set(-1.5, 0.1, -0.7);
-    const legBackRight = new THREE.Mesh(legGeometry1, legMaterial);
-    legBackRight.position.set(1.5, 0.1, -0.7);
-    const cushionGeometry = new THREE.BoxGeometry(1.6, 0.2, 1.1);
-    const cushionLeft = new THREE.Mesh(cushionGeometry, cushionMaterial);
-    cushionLeft.position.set(-0.85, 0.9, -0.15);
-    const cushionRight = new THREE.Mesh(cushionGeometry, cushionMaterial);
-    cushionRight.position.set(0.85, 0.9, -0.15);
-    const sofa = new THREE.Group();
-    sofa.add(seat, backRest, armRestLeft, armRestRight,
-             legFrontLeft, legFrontRight, legBackLeft, legBackRight,
-             cushionLeft, cushionRight);
-    sofa.position.set(1.5, 0, 5.5);
-    scene.add(sofa);
-    // ===================Sofa nhỏ====================
-    const seatGeometry2 = new THREE.BoxGeometry(1.9, 0.6, 1.6);
-    const seat2 = new THREE.Mesh(seatGeometry2, cushionMaterial);
-    seat2.position.set(0, 0.5, 0);
-    const backRestGeometry2 = new THREE.BoxGeometry(1.9, 1, 0.3);
-    const backRest2 = new THREE.Mesh(backRestGeometry2, cushionMaterial);
-    backRest2.position.set(0, 1.3, 0.65);
-    const armRestLeft2 = new THREE.Mesh(armRestGeometry, cushionMaterial);
-    armRestLeft2.position.set(-1, 0.7, 0);
-    const armRestRight2 = new THREE.Mesh(armRestGeometry, cushionMaterial);
-    armRestRight2.position.set(1, 0.7, 0);
-    const legFrontLeft2 = new THREE.Mesh(legGeometry1, legMaterial);
-    legFrontLeft2.position.set(-1, 0.1, 0.7);
-    const legFrontRight2 = new THREE.Mesh(legGeometry1, legMaterial);
-    legFrontRight2.position.set(1, 0.1, 0.7);
-    const legBackLeft2 = new THREE.Mesh(legGeometry1, legMaterial);
-    legBackLeft2.position.set(-1, 0.1, -0.7);
-    const legBackRight2 = new THREE.Mesh(legGeometry1, legMaterial);
-    legBackRight2.position.set(1, 0.1, -0.7);
-    const cushion = new THREE.Mesh(cushionGeometry, cushionMaterial);
-    cushion.position.set(0, 0.9, -0.15);
-    const sofa2 = new THREE.Group();
-    sofa2.add(seat2, backRest2, armRestLeft2, armRestRight2,
-              legFrontLeft2, legFrontRight2, legBackLeft2, legBackRight2,
-              cushion);
-    sofa2.rotateY(Math.PI / 2);
-    sofa2.position.set(5.5, 0, 2.7);
-    scene.add(sofa2);
-    // =======================Quạt trần================
-    const fanMaterial = new THREE.MeshStandardMaterial({ color: 0xCCCCCC });
+// Add fan
+const fanMaterial = new THREE.MeshStandardMaterial({ color: 0xCCCCCC });
     const fanBody = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.3), fanMaterial);
-    fanBody.position.set(0, 6, 0);
+    fanBody.position.set(0, 4.85, 0);
     scene.add(fanBody);
     const bladeGeometry = new THREE.BoxGeometry(4, 0.05, 0.4);
     for (let i = 0; i < 4; i++) {
@@ -145,183 +170,273 @@ export function init(container) {
         blade.rotation.y = (i * Math.PI) / 2;
         fanBody.add(blade);
     }
-    // ================= tivi ====================
-// ================= Tạo tivi ====================
-    const tvGroup = new THREE.Group();
-    const screenMaterial = new THREE.MeshStandardMaterial({ color: 0x000000, roughness: 0.5, metalness: 0.3 });
-    const standMaterial = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.7, metalness: 0.2 });
-    const poleMaterial = new THREE.MeshStandardMaterial({ color: 0x555555, roughness: 0.7, metalness: 0.3 });
-    const screenGeometry = new THREE.BoxGeometry(2.5, 1.5, 0.05);
-    const screen = new THREE.Mesh(screenGeometry, screenMaterial);
-    tvGroup.add(screen);
-    const frontBezelGeometry = new THREE.BoxGeometry(2.7, 1.7, 0.02);
-    const frontBezel = new THREE.Mesh(frontBezelGeometry, new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.5, metalness: 0.5 }));
-    frontBezel.position.set(0, 0, 0.035);
-    tvGroup.add(frontBezel);
-    const poleGeometry = new THREE.BoxGeometry(0.2, 1, 0.06);
-    const pole = new THREE.Mesh(poleGeometry, poleMaterial);
-    pole.position.set(0, -0.6, -0.055);
-    tvGroup.add(pole);
-    const standGeometry = new THREE.CylinderGeometry(1.5, 1, 0.05, 32);
-    standGeometry.scale(0.5, 1, 0.2);
-    const standMesh = new THREE.Mesh(standGeometry, standMaterial);
-    standMesh.rotation.x = Math.PI
-    standMesh.position.set(0, -1.125, 0);
-    tvGroup.add(standMesh);
-    tvGroup.position.set(1.5, 2.25, -6);
 
-    scene.add(tvGroup);
+    // === Create Bulb Fixture ===
 
-    // =============tủ kê tivi============== giữ lại chú thích để sau cải thiện thêm cái tủ kê ti vi
-    const doorMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5, metalness: 0.1 });
-    const knobMaterial = new THREE.MeshStandardMaterial({ color: 0x999999, roughness: 0.3, metalness: 0.6 });
-    const woodMaterial = new THREE.MeshStandardMaterial({ color: 0xdeb887, roughness: 0.6, metalness: 0.2 });
-    const tvStand = new THREE.Group();
-    // Main table surface
-    const topGeometry = new THREE.BoxGeometry(4, 0.2, 1);
-    const topMesh = new THREE.Mesh(topGeometry, woodMaterial);
-    topMesh.position.set(0, 1, 0);
-    tvStand.add(topMesh);
-    // Left and Right Cabinets cụ thể là thêm cái tấm cửa màu trắng
-    const cabinetGeometry = new THREE.BoxGeometry(1.2, 0.8, 1);
-    const leftCabinet = new THREE.Mesh(cabinetGeometry, woodMaterial);
-    leftCabinet.position.set(-1.4, 0.4, 0);
-    tvStand.add(leftCabinet);
-    const rightCabinet = new THREE.Mesh(cabinetGeometry, woodMaterial);
-    rightCabinet.position.set(1.4, 0.4, 0);
-    tvStand.add(rightCabinet);
-    // Cabinet Doors
-    const doorGeometry = new THREE.PlaneGeometry(1.1, 0.7);
-    const leftDoor = new THREE.Mesh(doorGeometry, doorMaterial);
-    leftDoor.position.set(-1.4, 0.4, 0.51);
-    tvStand.add(leftDoor);
-    const rightDoor = new THREE.Mesh(doorGeometry, doorMaterial);
-    rightDoor.position.set(1.4, 0.4, 0.51);
-    tvStand.add(rightDoor);
-    // Door Knobs
-    const knobGeometry = new THREE.SphereGeometry(0.05, 16, 16);
-    const leftKnob = new THREE.Mesh(knobGeometry, knobMaterial);
-    leftKnob.position.set(-1.15, 0.4, 0.55);
-    tvStand.add(leftKnob);
-    const rightKnob = new THREE.Mesh(knobGeometry, knobMaterial);
-    rightKnob.position.set(1.15, 0.4, 0.55);
-    tvStand.add(rightKnob);
-    // Middle Shelf
-    const middleShelfGeometry = new THREE.BoxGeometry(1.7, 0.1, 0.8);
-    const middleShelf = new THREE.Mesh(middleShelfGeometry, woodMaterial);
-    middleShelf.position.set(0, 0.6, 0);
-    tvStand.add(middleShelf);
-    // Base
-    const baseGeometry = new THREE.BoxGeometry(4, 0.2, 1);
-    const baseMesh = new THREE.Mesh(baseGeometry, woodMaterial);
-    baseMesh.position.set(0, 0.1, 0);
-    tvStand.add(baseMesh);
-    // Support Columns (Connecting Top Surface to Cabinets)
-    const supportGeometry = new THREE.BoxGeometry(0.2, 0.4, 0.7);
-    const leftSupport = new THREE.Mesh(supportGeometry, woodMaterial);
-    leftSupport.position.set(-1.4, 0.8, 0);
-    tvStand.add(leftSupport);
-    const rightSupport = new THREE.Mesh(supportGeometry, woodMaterial);
-    rightSupport.position.set(1.4, 0.8, 0);
-    tvStand.add(rightSupport);
-    tvStand.position.set(1.5,0,-5.93);
-    scene.add(tvStand);
-    //=========bình hoa cỡ lớn trang trí==============
-    const vaseMaterial = new THREE.MeshStandardMaterial({ color: 0xF5DEB3, roughness: 0.5,metalness: 0.05,side: THREE.DoubleSide});
-    const vasePoints = [
-        new THREE.Vector2(0.5, 0.0),new THREE.Vector2(0.4, 0.05),new THREE.Vector2(0.35, 0.17),
-        new THREE.Vector2(0.33, 0.22),new THREE.Vector2(0.33, 0.27),new THREE.Vector2(0.35, 0.32),
-        new THREE.Vector2(0.4, 0.44),new THREE.Vector2(0.9, 1.0),new THREE.Vector2(0.95, 1.1),
-        new THREE.Vector2(0.97, 1.15),new THREE.Vector2(0.99, 1.2),new THREE.Vector2(0.99, 1.23),
-        new THREE.Vector2(0.97, 1.28),new THREE.Vector2(0.95, 1.33),new THREE.Vector2(0.9, 1.43),
-        new THREE.Vector2(0.82, 1.6),new THREE.Vector2(0.75, 1.7),new THREE.Vector2(0.45, 1.99),
-        new THREE.Vector2(0.38, 2.14),new THREE.Vector2(0.33, 2.3),new THREE.Vector2(0.3, 2.5),
-        new THREE.Vector2(0.29, 2.6),new THREE.Vector2(0.28, 2.68),new THREE.Vector2(0.32, 2.73),
-        new THREE.Vector2(0.36, 2.78),new THREE.Vector2(0.42, 2.83),new THREE.Vector2(0.46, 2.89),
-        new THREE.Vector2(0.5, 2.92),new THREE.Vector2(0.58, 2.96),new THREE.Vector2(0.59, 2.95),
-        new THREE.Vector2(0.6, 2.94),new THREE.Vector2(0.615, 2.93),new THREE.Vector2(0.63, 2.92)
-    ];
-    const vaseGeometry = new THREE.LatheGeometry(vasePoints, 128);
-    const vase = new THREE.Mesh(vaseGeometry, vaseMaterial);
-    vase.castShadow = true;
-    vase.receiveShadow = true;
-    const bottomGeometry = new THREE.CircleGeometry(0.5, 64); // cùng bán kính đáy
-    const bottom = new THREE.Mesh(bottomGeometry, vaseMaterial);
-    bottom.rotation.x = -Math.PI / 2; // úp xuống trục Y
-    bottom.position.y = 0; // trùng với đáy bình
-    const vaseGroup = new THREE.Group();
-    vaseGroup.add(vase);
-    vaseGroup.add(bottom);
-    vaseGroup.position.set(5.4, 0, 5.4);
-    scene.add(vaseGroup);
-    // ================== ấm trà =======================
-    const geometry = new TeapotGeometry(0.1, 1, true, true, true, true, false); 
-    const material = new THREE.MeshStandardMaterial({ color: 0xFFFFF0 });  
-    const teapot = new THREE.Mesh(geometry, material);
-    teapot.position.set(2.5, 1.265, 2.8);  
-    scene.add(teapot);
-    //======= có ấm trà thì phải có cốc trà chứ===============
-    const cupMaterial = new THREE.MeshStandardMaterial({ color: 0xFFFFF0 , roughness: 0.5, metalness: 0.1, side: THREE.DoubleSide });
-    const cupPoints = [
-        new THREE.Vector2(0.025, 0.0), 
-        new THREE.Vector2(0.05, 0.003), 
-        new THREE.Vector2(0.055, 0.004),
-        new THREE.Vector2(0.0575, 0.005),
-        new THREE.Vector2(0.05875, 0.006),
-        new THREE.Vector2(0.060, 0.007), 
-        new THREE.Vector2(0.06, 0.1),
+// Bulb base (cylinder)
+const bulbBaseGeometry = new THREE.CylinderGeometry(0.07, 0.07, 0.25, 32);
+const bulbBaseMaterial = new THREE.MeshStandardMaterial({ color: 0x222222 });
+const bulbBase = new THREE.Mesh(bulbBaseGeometry, bulbBaseMaterial);
+bulbBase.rotation.z = Math.PI / 2;
+bulbBase.position.set(4.85, 3.8, -1.5); // Right wall above countertop
+scene.add(bulbBase);
 
-    ];
-    const cupGeometry = new THREE.LatheGeometry(cupPoints, 32);
-    const cup = new THREE.Mesh(cupGeometry, cupMaterial);
-    const bottomGeometry1 = new THREE.CircleGeometry(0.025); // bán kính đáy của cốc
-    const bottom1 = new THREE.Mesh(bottomGeometry1, cupMaterial);
-    bottom1.rotation.x = -Math.PI / 2; // xoay đáy cốc theo trục 
-    // Tạo group cho cốc
-    const cupGroup = new THREE.Group();
-    cupGroup.add(cup);
-    cupGroup.add(bottom1);
-    const numCups = 6;
-    const radius = 0.3; // Bán kính vòng tròn sắp xếp cốc
+const bulbGeometry = new THREE.SphereGeometry(0.18, 16, 64);
+const bulbMaterial = new THREE.MeshPhysicalMaterial({
+  color: 0xffffa0, // Warm yellow tint
+  transparent: true,
+  opacity: 0.9,
+  transmission: 0.95, // High transmission for glass-like effect
+  roughness: 0.1, // Smooth surface
+  metalness: 0.0, // Non-metallic
+  clearcoat: 0.5, // Subtle coating
+  emissive: 0xffffa0, // Soft glow
+  emissiveIntensity: 0.3,
+  side: THREE.DoubleSide
+});
+const bulb = new THREE.Mesh(bulbGeometry, bulbMaterial);
+bulb.position.set(4.65, 3.8, -1.5);
+scene.add(bulb);
 
-    for (let i = 0; i < numCups; i++) {
-        const angle = (i / numCups) * Math.PI * 2;
-        const x = Math.cos(angle) * radius;
-        const z = Math.sin(angle) * radius; 
-        const cupClone = cupGroup.clone();
-        cupClone.position.set(x+1.6, 1.18, z+2.7); 
-        scene.add(cupClone);
+// Update PointLight
+const bulbLight = new THREE.PointLight(0xffffa0, 4, 25, 1);
+bulbLight.position.set(4, 3.8, -1.5);
+bulbLight.castShadow = true;
+bulbLight.shadow.mapSize.set(2048, 2048);
+bulbLight.shadow.bias = -0.001;
+bulbLight.shadow.camera.near = 0.1;
+bulbLight.shadow.camera.far = 30;
+scene.add(bulbLight);
+
+// receives shadows
+floor.receiveShadow = true;
+floor.receiveShadow = true;
+backWall.receiveShadow = true;
+rightWall.receiveShadow = true;
+leftWall.receiveShadow = true;
+ceiling.receiveShadow = true;
+
+// cast shadows
+tableTop.castShadow = true;
+tableLegs.forEach(leg => leg.castShadow = true);
+
+fridge.castShadow = true;
+sink.castShadow = true;
+counter.castShadow = true;
+
+scene.traverse((child) => {
+  if (child.isMesh) {
+    child.castShadow = true;
+    child.receiveShadow = true;
+  }
+});
+
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+
+// === Orbit Controls for Camera 2 ===
+const controls = new OrbitControls(camera2, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.05;
+controls.enableZoom = true;
+controls.maxPolarAngle = Math.PI;
+controls.enabled = false;
+
+// === Active Camera ===
+let activeCamera = camera1;
+
+// === Switch Cameras with Key Press ===
+window.addEventListener('keydown', (event) => {
+  if (event.key === 'c') {
+    if (activeCamera === camera1) {
+      activeCamera = camera2;
+      controls.enabled = true;
+    } else {
+      activeCamera = camera1;
+      controls.enabled = false;
     }
-    
-    const listener = new THREE.AudioListener();
-    camera.add(listener);
-    
-    const audioLoader = new THREE.AudioLoader();
-    const sound = new THREE.Audio(listener);
-    
-    audioLoader.load('/src/laugos_overlook_montage_-_loop.mp3', function(buffer) {
-        sound.setBuffer(buffer);
-        sound.setLoop(true);
-        sound.setVolume(1);
-        sound.play();
-    });
-    
-    tvGroup.add(sound); // Âm thanh phát ra từ vị trí đồng hồ
+    console.log(`Switched to ${activeCamera === camera1 ? 'inside' : 'outside'} camera`);
+  }
+});
 
-    // Resize
-    window.addEventListener('resize', () => {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
+// === Resize Handler ===
+window.addEventListener('resize', () => {
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  camera1.aspect = window.innerWidth / window.innerHeight;
+  camera1.updateProjectionMatrix();
+  camera2.aspect = window.innerWidth / window.innerHeight;
+  camera2.updateProjectionMatrix();
+});
+
+// Gas stove on countertop
+const stoveMaterial = new THREE.MeshStandardMaterial({ color: 0x123456 }); // Stainless steel
+
+// Stove base
+const stoveBaseGeometry = new THREE.BoxGeometry(1, 0.2, 1.5); // Adjusted depth for 2 burners
+const stoveBase = new THREE.Mesh(stoveBaseGeometry, stoveMaterial);
+stoveBase.position.set(4.25, 1.7, -1.8); // On countertop
+stoveBase.castShadow = true;
+stoveBase.receiveShadow = true;
+scene.add(stoveBase);
+
+// Burners (2, larger, side by side)
+const burnerGeometry = new THREE.CylinderGeometry(0.25, 0.25, 0.02, 64); // Larger radius
+const burnerPositions = [
+  [0.1, 0.11, 0.4], // Right burner
+  [0.1, 0.11, -0.4]   // Left burner
+];
+burnerPositions.forEach(pos => {
+  const burner = new THREE.Mesh(burnerGeometry, stoveMaterial);
+  burner.position.set(4.25 + pos[0], 1.7 + pos[1], -1.8 + pos[2]);
+  burner.castShadow = true;
+  burner.receiveShadow = true;
+  scene.add(burner);
+});
+
+// Knobs (2)
+const knobGeometry = new THREE.CylinderGeometry(0.06, 0.06, 0.06, 32); // Fixed duplicate definition
+const knobPositions = [
+  [-0.35, 0.11, 0.4], // Right knob
+  [-0.35, 0.11, -0.4]   // Left knob
+];
+knobPositions.forEach(pos => {
+  const knob = new THREE.Mesh(knobGeometry, stoveMaterial);
+  knob.position.set(4.2 + pos[0], 1.7 + pos[1], -1.8 + pos[2]);
+  knob.castShadow = true;
+  knob.receiveShadow = true;
+  scene.add(knob);
+});
+
+// Flames (2 larger rings)
+const flameMaterial = new THREE.MeshBasicMaterial({
+  color: 0xff4500, // Orange-red flame
+  transparent: true,
+  opacity: 0.7,
+  side: THREE.DoubleSide
+});
+const flameGeometry = new THREE.ConeGeometry(0.028, 0.18, 8); // Slightly larger flame
+const flameGroups = [];
+burnerPositions.forEach((pos, burnerIndex) => {
+  const flameGroup = new THREE.Group();
+  const numFlames = 20;
+  const radius = 0.3; // Larger than burner radius (0.3)
+  for (let i = 0; i < numFlames; i++) {
+    const angle = (i / numFlames) * Math.PI * 2;
+    const flame = new THREE.Mesh(flameGeometry, flameMaterial);
+    flame.position.set(
+      radius * Math.cos(angle),
+      0.075, // Half flame height
+      radius * Math.sin(angle)
+    );
+    flameGroup.add(flame);
+  }
+  flameGroup.position.set(4.25 + pos[0], 1.71, -1.8 + pos[2]); // Above burner
+  scene.add(flameGroup);
+  flameGroups.push(flameGroup);
+});
+
+// Frying pan on left burner
+const panMaterial = new THREE.MeshStandardMaterial({ color: 0x333333, side: THREE.DoubleSide });
+const panBottomGeometry = new THREE.CylinderGeometry(0.28, 0.28, 0.05, 32); // Radius 0.28
+const panBottom = new THREE.Mesh(panBottomGeometry, panMaterial);
+panBottom.position.set(4.25 + 0.1, 1.81 + 0.025, -1.8 - 0.4); // Above left burner
+panBottom.castShadow = true;
+panBottom.receiveShadow = true;
+scene.add(panBottom);
+const panWallGeometry = new THREE.CylinderGeometry(0.28, 0.28, 0.1, 32, 1, true); // Radius 0.28
+const panWall = new THREE.Mesh(panWallGeometry, panMaterial);
+panWall.position.set(4.25 + 0.1, 1.81 + 0.05, -1.8 - 0.4);
+panWall.castShadow = true;
+panWall.receiveShadow = true;
+scene.add(panWall);
+const handleGeometry = new THREE.BoxGeometry(0.3, 0.03, 0.05); // Handle
+const handle = new THREE.Mesh(handleGeometry, panMaterial);
+handle.position.set(4.25 + 0.1 - 0.3, 1.81 + 0.05, -1.8 - 0.2); // Attached at edge
+handle.rotation.y = Math.PI / 6;
+handle.castShadow = true;
+handle.receiveShadow = true;
+scene.add(handle);
+
+// Stock pot on right burner
+const potMaterial = new THREE.MeshStandardMaterial({ color: 0x333333, side: THREE.DoubleSide });
+const potBottomGeometry = new THREE.CylinderGeometry(0.28, 0.28, 0.05, 32); // Radius 0.28
+const potBottom = new THREE.Mesh(potBottomGeometry, potMaterial);
+potBottom.position.set(4.25 + 0.1, 1.81 + 0.025, -1.8 + 0.4); // Above right burner
+potBottom.castShadow = true;
+potBottom.receiveShadow = true;
+scene.add(potBottom);
+const potWallGeometry = new THREE.CylinderGeometry(0.28, 0.28, 0.4, 32, 1, true); // Radius 0.28
+const potWall = new THREE.Mesh(potWallGeometry, potMaterial);
+potWall.position.set(4.25 + 0.1, 1.81 + 0.2, -1.8 + 0.4);
+potWall.castShadow = true;
+potWall.receiveShadow = true;
+scene.add(potWall);
+const handle1Geometry = new THREE.BoxGeometry(0.15, 0.05, 0.05); // Handle 1
+const handle1 = new THREE.Mesh(handle1Geometry, panMaterial);
+handle1.position.set(4.25 + 0.1, 1.81 + 0.3, -1.8 + 0.1); // Attached at edge
+handle1.castShadow = true;
+handle1.receiveShadow = true;
+scene.add(handle1);
+const handle2Geometry = new THREE.BoxGeometry(0.15, 0.05, 0.05); // Handle 2
+const handle2 = new THREE.Mesh(handle2Geometry, panMaterial);
+handle2.position.set(4.25 + 0.1, 1.81 + 0.3, -1.8 + 0.7); // Attached at edge
+handle2.castShadow = true;
+handle2.receiveShadow = true;
+scene.add(handle2);
+
+// Steak in frying pan (rectangular with fat cap)
+const steakMaterial = new THREE.MeshStandardMaterial({ color: 0x8b0000 }); // Red raw meat
+const steakGeometry = new THREE.BoxGeometry(0.2, 0.1, 0.45); // Thicker rectangle
+const steak = new THREE.Mesh(steakGeometry, steakMaterial);
+steak.position.set(4.25 + 0.1, 1.81 + 0.09, -1.8 - 0.4); // Center of pan, above bottom
+steak.castShadow = true;
+steak.receiveShadow = true;
+scene.add(steak);
+
+const fatCapMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff }); // White fat
+const fatCapGeometry = new THREE.BoxGeometry(0.04, 0.08, 0.15); // Thin strip for fat cap
+const fatCap = new THREE.Mesh(fatCapGeometry, fatCapMaterial);
+fatCap.position.set(4.25 + 0.1 + 0.12, 1.81 + 0.09, -1.8 - 0.4); // Attached to right side of steak
+fatCap.castShadow = true;
+fatCap.receiveShadow = true;
+scene.add(fatCap);
+
+// Boiling water in stock pot
+const waterMaterial = new THREE.MeshStandardMaterial({
+  color: 0x87ceeb, // Light blue
+  transparent: true,
+  opacity: 0.8,
+  side: THREE.DoubleSide
+});
+const waterGeometry = new THREE.CylinderGeometry(0.27, 0.27, 0.01, 32); // Slightly smaller than pot radius
+const water = new THREE.Mesh(waterGeometry, waterMaterial);
+water.position.set(4.25 + 0.1, 1.81 + 0.35, -1.8 + 0.4); // Near top of pot
+water.castShadow = true;
+water.receiveShadow = true;
+scene.add(water);
+
+// Update animation loop for boiling water effect
+const animate = () => {
+  requestAnimationFrame(animate);
+
+  // Spin the fan
+  fanBody.rotation.y += 0.15;
+
+  // Flicker flames
+  flameGroups.forEach((group, index) => {
+    group.children.forEach((flame, flameIndex) => {
+      flame.scale.y = 1 + 0.1 * Math.sin(Date.now() * 0.005 + index + flameIndex * 0.2);
     });
-    // Animation
-    function animate() {
-        requestAnimationFrame(animate);
-        fanBody.rotation.y += 0.05;
-        updateClockHands();
-        controls.update(); // cập nhật điều khiển camera
-        renderer.render(scene, camera);
-    }
-    animate();
-    
-}
+  });
+
+  // Boiling water effect
+  water.position.y = 1.81 + 0.35 + 0.005 * Math.sin(Date.now() * 0.01); // Slight ripple
+
+  if (activeCamera === camera2) {
+    controls.update();
+  }
+  renderer.render(scene, activeCamera);
+};
+
+animate();

@@ -1,6 +1,8 @@
+//AUTHOR VUMINHPHUONG PART 2 ID 20224290
 import * as THREE from 'three';
 import { OrbitControls } from '/OrbitControls.js';
 import { TeapotGeometry } from "/TeapotGeometry.js";
+// ngôi nhà
 export function init(container) {
     container.innerHTML = '';
     // Scene, Camera, Renderer
@@ -19,9 +21,22 @@ export function init(container) {
     controls.update();
     // Ánh sáng
     scene.add(new THREE.AmbientLight(0xffffff, 0.6));
-    const dirLight = new THREE.DirectionalLight(0xffffff, 0.6);
-    dirLight.position.set(2, 5, 3);
-    scene.add(dirLight);
+    //ánh sáng
+    const light = new THREE.AmbientLight(0xffffff, 1);
+    scene.add(light);
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+    directionalLight.position.set(2, 5, 3);
+    directionalLight.castShadow = true;
+    directionalLight.shadow.mapSize.width = 1024;
+    directionalLight.shadow.mapSize.height = 1024;
+    directionalLight.shadow.camera.near = 0.1;
+    directionalLight.shadow.camera.far = 10;
+    scene.add(directionalLight);
+    //background
+    const textureLoader2 = new THREE.TextureLoader();
+    textureLoader2.load('./background.jpg', (texture) => {
+        scene.background = texture;
+    })
     // thêm nền cho ngôi nhà
     const betong = new THREE.MeshStandardMaterial({ 
        color: 0xCCCCCC, 
@@ -755,4 +770,20 @@ export function init(container) {
         renderer.render(scene, camera);
     }
     animate();
+    // 11. Add audio
+    const listener = new THREE.AudioListener()
+    camera.add(listener)
+    const sound = new THREE.Audio(listener)
+    const audioLoader = new THREE.AudioLoader()
+    audioLoader.load('/music.mp3', (buffer) => {
+        sound.setBuffer(buffer)
+        sound.setLoop(true)
+        sound.setVolume(0.5)
+        sound.play()
+    },
+        (progress) => {
+        console.log(`Audio: ${(progress.loaded / progress.total * 100).toFixed(1)}% loaded`)
+        },
+        (err) => console.error('Error loading ambient.mp3:', err)
+    )
 }

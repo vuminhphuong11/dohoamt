@@ -1,5 +1,6 @@
+//AUTHOR NGUYỄN QUANG ANH ID 20213564
 import * as THREE from 'three';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
+import { OrbitControls } from '/OrbitControls';
 
 // === Create Scene ===
 const scene = new THREE.Scene();
@@ -431,7 +432,7 @@ scene.add(waterStream);
 // === Water Stream Sound ===
 const waterSound = new THREE.PositionalAudio(audioListener);
 const StreamaudioLoader = new THREE.AudioLoader();
-StreamaudioLoader.load('sounds/faucet.mp3', function(buffer) {
+StreamaudioLoader.load('/faucet.mp3', function(buffer) {
   waterSound.setBuffer(buffer);
   waterSound.setLoop(true);
   waterSound.setVolume(0.4);
@@ -703,7 +704,7 @@ scene.add(handle2);
 // === Boiling Sound for Stock Pot ===
 const boilingSound = new THREE.PositionalAudio(audioListener);
 const boilingLoader = new THREE.AudioLoader();
-boilingLoader.load('sounds/boiling.mp3', (buffer) => {
+boilingLoader.load('/boiling.mp3', (buffer) => {
   boilingSound.setBuffer(buffer);
   boilingSound.setRefDistance(1);  // Audible range
   boilingSound.setLoop(true);

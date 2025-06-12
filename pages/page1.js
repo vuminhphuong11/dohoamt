@@ -1,5 +1,5 @@
-//Author: BUI HOANG GIANG - ID: 20224307
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+// bùi hoàng giang- ID 20224307
+import * as THREE from 'three';
 
     const loader = new THREE.TextureLoader();
     const wallTexture = loader.load('./Wall.png');
@@ -11,7 +11,7 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.m
 
     wallTexture.wrapS = THREE.RepeatWrapping;
     wallTexture.wrapT = THREE.RepeatWrapping;
-    wallTexture.repeat.set(4, 2);
+    wallTexture.repeat.set(4, 2); 
 
     groundTexture.wrapS = THREE.RepeatWrapping;
     groundTexture.wrapT = THREE.RepeatWrapping;
@@ -25,28 +25,6 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.m
     const renderer = new THREE.WebGLRenderer();
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
-
-// Tạo AudioListener và gắn vào camera
-const listener = new THREE.AudioListener();
-camera.add(listener);
-
-// Tạo đối tượng âm thanh
-const sound = new THREE.Audio(listener);
-
-// Tải file âm thanh
-const audioLoader = new THREE.AudioLoader();
-const doorSound = new Audio('./Door.mp3');
-audioLoader.load('', function(buffer) {
-    sound.setBuffer(buffer);
-    sound.setLoop(false);
-    sound.setVolume(0.5);
-});
-
-// Khởi tạo âm thanh nền
-const backgroundSound = new Audio('./Background.mp3'); 
-backgroundSound.loop = true; 
-backgroundSound.volume = 0.5; 
-backgroundSound.play(); 
 
     // Tạo sàn nhà
     const floorGeometry = new THREE.BoxGeometry(10, 0.1, 10);
@@ -102,18 +80,12 @@ backgroundSound.play();
         doorOpen = !doorOpen;
         door.rotation.y = doorOpen ? Math.PI / 4 : 0;
         door.position.set(doorOpen ? -0.1 : -0.8, 2, doorOpen ? 5.5 : 5.1);
-        doorSound.currentTime = 0; // Đảm bảo phát lại từ đầu
-        doorSound.play();
     }
 
     document.addEventListener('keydown', (event) => {
         if (event.key === 'e' || event.key === 'E') {
             toggleDoor();
         }
-    
-     // Phát âm thanh khi mở/đóng
-    if (sound.isPlaying) sound.stop(); // Dừng nếu đang phát
-    sound.play();
     });
 
     // Tạo tường phân chia
@@ -407,20 +379,6 @@ backgroundSound.play();
     renderer.shadowMap.enabled = true;
     floor.receiveShadow = true;
     toiletTank.castShadow = true;
-
-    const toggleSoundBtn = document.getElementById('toggleSoundBtn');
-let isSoundPlaying = true;
-
-toggleSoundBtn.addEventListener('click', () => {
-    if (isSoundPlaying) {
-        backgroundSound.pause();
-        toggleSoundBtn.textContent = 'Bật âm thanh';
-    } else {
-        backgroundSound.play();
-        toggleSoundBtn.textContent = 'Tắt âm thanh';
-    }
-    isSoundPlaying = !isSoundPlaying;
-});
 
     // Vòng lặp render
     function animate() {

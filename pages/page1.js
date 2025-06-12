@@ -1,4 +1,5 @@
-    import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+//Author: BUI HOANG GIANG - ID: 20224307
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
 
     const loader = new THREE.TextureLoader();
     const wallTexture = loader.load('./Wall.png');

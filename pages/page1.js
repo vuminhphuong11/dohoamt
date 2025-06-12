@@ -1,5 +1,150 @@
 //Author: BUI HOANG GIANG - ID: 20224307
-et(4.5, 1.5, -3.5); 
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+
+    const loader = new THREE.TextureLoader();
+    const wallTexture = loader.load('./Wall.png');
+    const mirrorTexture = loader.load('./Mirror.jpg');
+    const woodTexture = loader.load('./Door.jpg');
+    const groundTexture = loader.load('./Ground.png');
+    const carpetTexture = loader.load('./Carpet.png');
+    const windowTexture = loader.load('./Window.png');
+
+    wallTexture.wrapS = THREE.RepeatWrapping;
+    wallTexture.wrapT = THREE.RepeatWrapping;
+    wallTexture.repeat.set(4, 2);
+
+    groundTexture.wrapS = THREE.RepeatWrapping;
+    groundTexture.wrapT = THREE.RepeatWrapping;
+    groundTexture.repeat.set(4, 2);
+
+    // Khởi tạo scene, camera và renderer
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xFAB785);
+
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+
+// Tạo AudioListener và gắn vào camera
+const listener = new THREE.AudioListener();
+camera.add(listener);
+
+// Tạo đối tượng âm thanh
+const sound = new THREE.Audio(listener);
+
+// Tải file âm thanh
+const audioLoader = new THREE.AudioLoader();
+const doorSound = new Audio('./Door.mp3');
+audioLoader.load('', function(buffer) {
+    sound.setBuffer(buffer);
+    sound.setLoop(false);
+    sound.setVolume(0.5);
+});
+
+// Khởi tạo âm thanh nền
+const backgroundSound = new Audio('./Background.mp3'); 
+backgroundSound.loop = true; 
+backgroundSound.volume = 0.5; 
+backgroundSound.play(); 
+
+    // Tạo sàn nhà
+    const floorGeometry = new THREE.BoxGeometry(10, 0.1, 10);
+    const floorMaterial = new THREE.MeshStandardMaterial({ map: groundTexture });
+    const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+    floor.position.y = -0.05;
+    scene.add(floor);
+
+    // Tạo tường
+    const wallMaterial = new THREE.MeshStandardMaterial({ map: wallTexture });
+    const leftWall = new THREE.Mesh(new THREE.BoxGeometry(0.1, 5, 10), wallMaterial);
+    leftWall.position.set(-5, 2.5, 0);
+    scene.add(leftWall);
+
+    const rightWall = new THREE.Mesh(new THREE.BoxGeometry(0.1, 5, 10), wallMaterial);
+    rightWall.position.set(5, 2.5, 0);  
+    scene.add(rightWall);
+
+    const backWall = new THREE.Mesh(new THREE.BoxGeometry(10, 5, 0.1), wallMaterial);
+    backWall.position.set(0, 2.5, -5);
+    scene.add(backWall);
+
+    const windowFrameMaterial = new THREE.MeshStandardMaterial({ map: windowTexture });
+
+    const windowFrameGeometry = new THREE.BoxGeometry(2.5, 2, 0.1); 
+    const windowFrame = new THREE.Mesh(windowFrameGeometry, windowFrameMaterial);
+    windowFrame.position.set(0, 3, -4.99); 
+    scene.add(windowFrame);
+
+    // Tạo tường trước với cửa
+    const frontWallMaterial = new THREE.MeshStandardMaterial({ map: wallTexture });
+    const frontWallLeft = new THREE.Mesh(new THREE.BoxGeometry(3, 5, 0.1), frontWallMaterial);
+    frontWallLeft.position.set(-3.5, 2.5, 5);
+    scene.add(frontWallLeft);
+
+    const frontWallRight = new THREE.Mesh(new THREE.BoxGeometry(4.5, 5, 0.1), frontWallMaterial);
+    frontWallRight.position.set(2.75, 2.5, 5);
+    scene.add(frontWallRight);
+
+    const frontWallTop = new THREE.Mesh(new THREE.BoxGeometry(4, 1, 0.1), frontWallMaterial);
+    frontWallTop.position.set(0, 4.5, 5);
+    scene.add(frontWallTop);
+
+    // Tạo cửa
+    const doorMaterial = new THREE.MeshStandardMaterial({ map: woodTexture });
+    const door = new THREE.Mesh(new THREE.BoxGeometry(2.75, 4, 0.1), doorMaterial);
+    door.position.set(-0.2, 2, 5.5);
+    door.rotation.y = Math.PI / 4; // Cửa mở 45 độ
+    scene.add(door);
+
+    let doorOpen = false;
+    function toggleDoor() {
+        doorOpen = !doorOpen;
+        door.rotation.y = doorOpen ? Math.PI / 4 : 0;
+        door.position.set(doorOpen ? -0.1 : -0.8, 2, doorOpen ? 5.5 : 5.1);
+        doorSound.currentTime = 0; // Đảm bảo phát lại từ đầu
+        doorSound.play();
+    }
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'e' || event.key === 'E') {
+            toggleDoor();
+        }
+    
+     // Phát âm thanh khi mở/đóng
+    if (sound.isPlaying) sound.stop(); // Dừng nếu đang phát
+    sound.play();
+    });
+
+    // Tạo tường phân chia
+    const partitionWall = new THREE.Mesh(new THREE.BoxGeometry(3, 5, 0.5), wallMaterial);
+    partitionWall.position.set(3.5, 2.5, -1);
+    scene.add(partitionWall);
+
+    // Tạo toilet
+    const toiletMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 0.2, roughness: 0.1 });
+
+    const baseStandGeometry = new THREE.ConeGeometry(0.6, 0.7, 32, 1, false);
+    const baseStand = new THREE.Mesh(baseStandGeometry, toiletMaterial);
+    baseStand.position.set(4, 0.1, -3); // Đặt thấp hơn mặt sàn một chút
+    scene.add(baseStand);
+
+    const toiletBaseGeometry = new THREE.ConeGeometry(0.6, 0.9, 32, 1, false);
+    const toiletBase = new THREE.Mesh(toiletBaseGeometry, toiletMaterial);
+    toiletBase.position.set(4, 0.5, -3);
+    toiletBase.rotation.x = Math.PI; // Xoay 180 độ để đỉnh nón hướng xuống
+    scene.add(toiletBase);
+
+    const toiletTankGeometry = new THREE.BoxGeometry(0.5, 1.2, 0.8);
+    const toiletTank = new THREE.Mesh(toiletTankGeometry, toiletMaterial);
+    toiletTank.position.set(4.5, 1.5, -3);
+    scene.add(toiletTank);
+
+    const sprayerMaterial = new THREE.MeshStandardMaterial({ color: 0xC0C0C0, metalness: 0.9, roughness: 0.1 });
+
+    const handleGeometry = new THREE.CylinderGeometry(0.05, 0.05, 0.2, 32);
+    const handle = new THREE.Mesh(handleGeometry, sprayerMaterial);
+    handle.position.set(4.5, 1.5, -3.5); 
     scene.add(handle);
 
     const headGeometry = new THREE.CylinderGeometry(0.06, 0.06, 0.3, 32); 

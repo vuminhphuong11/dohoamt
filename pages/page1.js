@@ -1,12 +1,12 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
 
 const loader = new THREE.TextureLoader();
-const wallTexture = loader.load('./{50C75661-D403-4B1C-BCFB-6EEAE041DD7E}.png');
-const mirrorTexture = loader.load('./download.jpg');
-const woodTexture = loader.load('./premium_photo-1674048382856-aa9984d8b391.jpg');
-const groundTexture = loader.load('./{DE7B1CDA-FC01-45C3-8768-BFF91472DD20}.png');
-const carpetTexture = loader.load('./{5315C8BB-EA2E-4997-8CC5-EC8486231C0A}.png');
-const windowTexture = loader.load('./{F234AD0F-D57C-49FD-BB45-4E85DE78B406}.png');
+const wallTexture = loader.load('./Wall.png');
+const mirrorTexture = loader.load('./Mirror.jpg');
+const woodTexture = loader.load('./Door.jpg');
+const groundTexture = loader.load('./Ground.png');
+const carpetTexture = loader.load('./Carpet.png');
+const windowTexture = loader.load('./Window.png');
 
 wallTexture.wrapS = THREE.RepeatWrapping;
 wallTexture.wrapT = THREE.RepeatWrapping;

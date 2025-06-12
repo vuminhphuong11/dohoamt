@@ -4,7 +4,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { RectAreaLightHelper } from 'three/examples/jsm/helpers/RectAreaLightHelper.js';
 
 // =================================================================
-// SHADER CODE CHO HIỆU ỨNG NƯỚC NÂNG CAO
+// SHADER CODE (Không thay đổi)
 // =================================================================
 
 const vertexShader = `
@@ -72,6 +72,82 @@ function roundedRect(shape, x, y, width, height, radius) {
     shape.quadraticCurveTo(x, y, x, y + radius);
 }
 
+// MỚI: Hàm tạo giá treo khăn tắm
+/**
+ * Creates a 3D model of a wall-mounted towel rack.
+ * Based on the provided image, it includes two bars and a side hook.
+ * @param {THREE.Material} material - The material to apply to the rack.
+ * @returns {THREE.Group} - A group containing all parts of the towel rack.
+ */
+function createTowelRack(material) {
+    const rackGroup = new THREE.Group();
+
+    const barLength = 1.0;
+    const barRadius = 0.015;
+    const mountWidth = barLength + 0.05;
+
+    const barGeometry = new THREE.CylinderGeometry(barRadius, barRadius, barLength, 32);
+
+    const frontBar = new THREE.Mesh(barGeometry, material);
+    frontBar.rotation.z = Math.PI / 2;
+    frontBar.position.z = 0.1;
+    rackGroup.add(frontBar);
+
+    const backBar = new THREE.Mesh(barGeometry, material);
+    backBar.rotation.z = Math.PI / 2;
+    backBar.position.z = 0.2;
+    backBar.position.y = 0.05;
+    rackGroup.add(backBar);
+
+    const mountGroup = new THREE.Group();
+    const plateGeometry = new THREE.BoxGeometry(0.04, 0.2, 0.02);
+    const armHolderGeometry = new THREE.BoxGeometry(0.1, 0.04, 0.04);
+
+    const leftPlate = new THREE.Mesh(plateGeometry, material);
+    const leftArmHolder = new THREE.Mesh(armHolderGeometry, material);
+    leftArmHolder.position.z = 0.05;
+    leftPlate.add(leftArmHolder);
+    leftPlate.position.x = -mountWidth / 2;
+    mountGroup.add(leftPlate);
+
+    const rightPlate = leftPlate.clone();
+    rightPlate.position.x = mountWidth / 2;
+    mountGroup.add(rightPlate);
+    rackGroup.add(mountGroup);
+
+    const verticalArmGeometry = new THREE.CylinderGeometry(0.01, 0.01, 0.1, 16);
+    const arm1 = new THREE.Mesh(verticalArmGeometry, material);
+    arm1.position.set(-mountWidth / 2, -0.05, 0.1);
+    rackGroup.add(arm1);
+
+    const arm2 = arm1.clone();
+    arm2.position.x = mountWidth / 2;
+    rackGroup.add(arm2);
+
+    const arm3 = new THREE.Mesh(verticalArmGeometry, material);
+    arm3.position.set(-mountWidth / 2, 0, 0.2);
+    rackGroup.add(arm3);
+
+    const arm4 = arm3.clone();
+    arm4.position.x = mountWidth / 2;
+    rackGroup.add(arm4);
+
+    const hookGroup = new THREE.Group();
+    const hookMaterial = material.clone();
+    const hookStemGeo = new THREE.BoxGeometry(0.02, 0.08, 0.02);
+    const hookArmGeo = new THREE.BoxGeometry(0.02, 0.02, 0.05);
+    const hookStem = new THREE.Mesh(hookStemGeo, hookMaterial);
+    const hookArm = new THREE.Mesh(hookArmGeo, hookMaterial);
+    hookArm.position.y = -0.03;
+    hookArm.position.z = 0.025;
+    hookStem.add(hookArm);
+    hookGroup.add(hookStem);
+    hookGroup.position.set(-mountWidth / 2, -0.08, 0);
+    rackGroup.add(hookGroup);
+
+    return rackGroup;
+}
+
 
 // =================================================================
 // HÀM INIT CHÍNH
@@ -95,18 +171,69 @@ export async function init(container) {
     controls.target.set(0, 1.5, 0);
     controls.enableDamping = true;
 
+    // MỚI: THIẾT LẬP ÂM THANH
+    const listener = new THREE.AudioListener();
+    camera.add(listener);
+
+    // Tạo một div để yêu cầu người dùng tương tác để bật âm thanh
+    const startButton = document.createElement('div');
+    startButton.innerHTML = 'Click to Start';
+    Object.assign(startButton.style, {
+        position: 'absolute',
+        top: '50%',
+        left: '50%',
+        transform: 'translate(-50%, -50%)',
+        padding: '20px 40px',
+        backgroundColor: 'rgba(0,0,0,0.7)',
+        color: 'white',
+        border: '2px solid white',
+        borderRadius: '10px',
+        cursor: 'pointer',
+        fontSize: '24px',
+        fontFamily: 'sans-serif',
+        textAlign: 'center'
+    });
+    container.appendChild(startButton);
+
+    const audioLoader = new THREE.AudioLoader();
+
+    // 1. Âm thanh môi trường (Nhạc nền)
+    const backgroundMusic = new THREE.Audio(listener);
+    audioLoader.load('../meditation.m4a', function(buffer) {
+        backgroundMusic.setBuffer(buffer);
+        backgroundMusic.setLoop(true);
+        backgroundMusic.setVolume(0.8);
+    });
+
+    // 2. Âm thanh định vị (Tiếng nước)
+    const waterSound = new THREE.PositionalAudio(listener);
+    audioLoader.load('../bubbles.m4a', function(buffer) {
+        waterSound.setBuffer(buffer);
+        waterSound.setRefDistance(10);
+        waterSound.setRolloffFactor(2);
+        waterSound.setLoop(true);
+        waterSound.setVolume(0.2);
+    });
+    
+    // Sự kiện click để bật âm thanh (do chính sách của trình duyệt)
+    startButton.addEventListener('click', () => {
+        if(backgroundMusic.buffer && !backgroundMusic.isPlaying) backgroundMusic.play();
+        if(waterSound.buffer && !waterSound.isPlaying) waterSound.play();
+        startButton.style.display = 'none'; // Ẩn nút đi
+    }, { once: true });
+
+
     // --- Chuẩn bị Vật liệu ---
     const textureLoader = new THREE.TextureLoader();
-    const darkTileTexture = textureLoader.load('textures/stone_tiles.jpg');
+    const darkTileTexture = textureLoader.load('https://threejs.org/examples/textures/hardwood2_diffuse.jpg');
     darkTileTexture.wrapS = darkTileTexture.wrapT = THREE.RepeatWrapping;
     darkTileTexture.repeat.set(2, 6);
     
-    const pebbleTexture = textureLoader.load('textures/pebbles.jpeg');
+    const pebbleTexture = textureLoader.load('../pebbles.jpeg');
     pebbleTexture.wrapS = pebbleTexture.wrapT = THREE.RepeatWrapping;
     pebbleTexture.repeat.set(10, 15);
     
-    // Texture cho hiệu ứng gợn sóng nước
-    const dudvMap = textureLoader.load('textures/water_dudv.webp');
+    const dudvMap = textureLoader.load('../water_dudv.webp');
     dudvMap.wrapS = dudvMap.wrapT = THREE.RepeatWrapping;
 
     const materials = {
@@ -119,25 +246,31 @@ export async function init(container) {
         poolBody: new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.1 }),
         planter: new THREE.MeshStandardMaterial({ color: 0xffffff }),
         plant: new THREE.MeshStandardMaterial({ color: 0x228B22 }),
+        // MỚI: Vật liệu cho giá treo
+        metalRack: new THREE.MeshStandardMaterial({
+             color: 0xd0d0d0,
+             metalness: 0.9,
+             roughness: 0.4
+         }),
     };
 
 
     // GIAI ĐOẠN 1: DỰNG KIẾN TRÚC PHÒNG
-    // (Code giữ nguyên)
     const roomConfig = { roomLength: 20, roomWidth: 7, roomHeight: 4.5 };
     const { roomWidth, roomLength, roomHeight } = roomConfig;
     const architectureGroup = new THREE.Group();
+    
+    // THAY ĐỔI: Làm trần nhà dày hơn
+    const ceilingThickness = 0.2; // Độ dày của trần nhà, bạn có thể thay đổi số này
     const ceiling = new THREE.Mesh(
-        new THREE.PlaneGeometry(roomWidth, roomLength),
-        new THREE.MeshStandardMaterial({ color: 0xffffff, side: THREE.DoubleSide })
+        new THREE.BoxGeometry(roomWidth, ceilingThickness, roomLength), // Đổi từ PlaneGeometry thành BoxGeometry
+        materials.ceiling // Sử dụng vật liệu đã có
     );
-    ceiling.rotation.x = Math.PI / 2;
-    ceiling.position.y = roomHeight;
+    // Điều chỉnh lại vị trí Y để mặt dưới của trần nhà đúng bằng roomHeight
+    ceiling.position.y = roomHeight - (ceilingThickness / 2) + 0.2;
+    ceiling.position.x = -0.1
     architectureGroup.add(ceiling);
-    const floor = new THREE.Mesh(
-        new THREE.PlaneGeometry(roomWidth, roomLength),
-        new THREE.MeshStandardMaterial({color: 0x222222})
-    );
+    const floor = new THREE.Mesh(new THREE.PlaneGeometry(roomWidth, roomLength), new THREE.MeshStandardMaterial({color: 0x222222}));
     floor.rotation.x = -Math.PI / 2;
     floor.receiveShadow = true;
     floor.position.x = 0;
@@ -150,11 +283,13 @@ export async function init(container) {
     backWall.renderOrder = 2;
     architectureGroup.add(backWall);
     const rightWall = new THREE.Group();
-    const panelCount = 15, panelWidth = 0.4, gap = 0.2, totalSegmentWidth = panelWidth + gap;
+    const panelCount = 15, panelWidth = 0.5, gap = 0.2, totalSegmentWidth = panelWidth + gap;
     for (let i = 0; i < panelCount; i++) {
         const zPos = -roomLength / 2 + i * totalSegmentWidth + totalSegmentWidth / 2;
-        const panel = new THREE.Mesh(new THREE.BoxGeometry(0.2, roomHeight, panelWidth), materials.wallPanel);
+        const panel = new THREE.Mesh(new THREE.BoxGeometry(0.2, roomHeight*0.5, panelWidth), materials.wallPanel);
         panel.position.z = zPos;
+        panel.position.y = 1.2;
+        panel.position.x = -0.15
         rightWall.add(panel);
         if (i < panelCount - 1) {
             const rectLight = new THREE.RectAreaLight(0xffffff, 5, 0.1, roomHeight * 0.5);
@@ -169,9 +304,8 @@ export async function init(container) {
 
     
     // GIAI ĐOẠN 2: BỐ TRÍ MẶT ĐẤT VÀ HỒ BƠI
-    // (Code giữ nguyên)
     const groundGroup = new THREE.Group();
-    groundGroup.position.set(1.5, 0, 0); 
+    groundGroup.position.set(1.5, 0, 0);
     const pebbleGround = new THREE.Mesh(new THREE.BoxGeometry(roomWidth, 0.1, roomLength), materials.pebbles);
     pebbleGround.position.y = 0.05;
     pebbleGround.position.x = -1.5
@@ -183,11 +317,13 @@ export async function init(container) {
         groundGroup.add(stone);
     }
     const poolGroup = new THREE.Group();
-    poolGroup.position.y = 0.1; 
+    poolGroup.position.y = 0.1;
     groundGroup.add(poolGroup);
+    // MỚI: Gắn âm thanh nước vào hồ bơi
+    poolGroup.add(waterSound);
+
     const waterWidth = 3, waterLength = 12, waterDepth = 0.7;
     const wallThickness = 0.2, wallHeight = 1.0;
-    const islandWidth = 1.5, islandLength = 4, islandHeight = 0.5, islandRadius = 0.5;
     const wallShape = new THREE.Shape();
     const outerWidth = waterWidth + wallThickness * 2;
     const outerLength = waterLength + wallThickness * 2;
@@ -197,10 +333,7 @@ export async function init(container) {
     wallShape.holes.push(innerWallPath);
     const wallExtrudeSettings = { depth: wallHeight, bevelEnabled: true, bevelThickness: 0.02, bevelSize: 0.02, bevelSegments: 2 };
     const wallGeometry = new THREE.ExtrudeGeometry(wallShape, wallExtrudeSettings);
-    const poolWalls = new THREE.Mesh(wallGeometry, new THREE.MeshStandardMaterial({
-        color: 0xffffff,
-        side: THREE.DoubleSide
-    }));
+    const poolWalls = new THREE.Mesh(wallGeometry, new THREE.MeshStandardMaterial({color: 0xffffff, side: THREE.DoubleSide}));
     poolWalls.rotation.x = -Math.PI / 2;
     poolWalls.position.y = 0;
     poolWalls.castShadow = true;
@@ -215,21 +348,12 @@ export async function init(container) {
         const radius = Math.random() * 0.07 + 0.03;
         const bubble = new THREE.Mesh(
             new THREE.SphereGeometry(radius, 12, 8),
-            new THREE.MeshPhysicalMaterial({
-                color: 0xffffff,
-                transmission: 1,
-                roughness: 0.1,
-                thickness: 0.2,
-                transparent: true,
-                opacity: 0.5
-            })
+            new THREE.MeshPhysicalMaterial({ color: 0xffffff, transmission: 1, roughness: 0.1, thickness: 0.2, transparent: true, opacity: 0.5 })
         );
         bubble.position.x = (Math.random() - 0.5) * waterWidth * 0.8;
         bubble.position.y = Math.random() * waterDepth * 0.2 + 0.1;
         bubble.position.z = (Math.random() - 0.5) * waterLength * 0.8;
-        bubble.userData = {
-            speed: Math.random() * 0.15 + 0.07
-        };
+        bubble.userData = { speed: Math.random() * 0.15 + 0.07 };
         bubbles.push(bubble);
         bubbleGroup.add(bubble);
     }
@@ -239,62 +363,18 @@ export async function init(container) {
     const ballRadius = 0.25;
     const ball = new THREE.Mesh(
         new THREE.SphereGeometry(ballRadius, 64, 32),
-        new THREE.MeshPhysicalMaterial({
-            color: 0xff4444,
-            roughness: 0.15,
-            metalness: 0.3,
-            transmission: 0.6,
-            thickness: 0.3,
-            clearcoat: 1,
-            clearcoatRoughness: 0.05,
-            reflectivity: 0.7,
-            ior: 1.4
-        })
+        new THREE.MeshPhysicalMaterial({ color: 0xff4444, roughness: 0.15, metalness: 0.3, transmission: 0.6, thickness: 0.3, clearcoat: 1, clearcoatRoughness: 0.05, reflectivity: 0.7, ior: 1.4 })
     );
-    // Đặt bóng lên mặt nước, vị trí tuỳ ý trong vùng nước
     ball.position.set(0, waterDepth + ballRadius, 0);
     poolGroup.add(ball);
 
-    // === TẠO HIỆU ỨNG GỢN SÓNG QUANH BÓNG ===
-    // const waveGeometry = new THREE.RingGeometry(ballRadius * 1.1, ballRadius * 2.2, 64);
-    // const waveMaterial = new THREE.MeshBasicMaterial({
-    //     color: 0x66ccff,
-    //     transparent: true,
-    //     opacity: 0.4,
-    //     side: THREE.DoubleSide,
-    //     depthWrite: false
-    // });
-    // const wave = new THREE.Mesh(waveGeometry, waveMaterial);
-    // wave.rotation.x = -Math.PI / 2;
-    // wave.position.set(ball.position.x, waterDepth + 0.01, ball.position.z);
-    // poolGroup.add(wave);
-
-    // const wave2 = new THREE.Mesh(waveGeometry.clone(), waveMaterial.clone());
-    // wave2.rotation.x = -Math.PI / 2;
-    // wave2.position.set(ball.position.x, waterDepth + 0.011, ball.position.z);
-    // poolGroup.add(wave2);
-
-    // GIAI ĐOẠN 3: TẠO HIỆU ỨNG NƯỚC ĐƠN GIẢN
+    // GIAI ĐOẠN 3: TẠO HIỆU ỨNG NƯỚC
     const waterShape = new THREE.Shape();
     roundedRect(waterShape, -waterWidth / 2, -waterLength / 2, waterWidth, waterLength, 0.05);
     const waterGeometry = new THREE.ShapeGeometry(waterShape);
     
-    // Vật liệu để render depth pass
-    const depthMaterial = new THREE.MeshDepthMaterial({
-        depthPacking: THREE.RGBADepthPacking,
-        blending: THREE.NoBlending,
-    });
-
-    // Vật liệu để render depth pass
-    const waterMaterial = new THREE.MeshPhysicalMaterial({
-        color: 0x24919B,
-        transmission: 1,
-        roughness: 0.05,
-        thickness: 0.5,
-        ior: 1.33,
-        transparent: true,
-        opacity: 0.8
-    });
+    const depthMaterial = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking, blending: THREE.NoBlending });
+    const waterMaterial = new THREE.MeshPhysicalMaterial({ color: 0x24919B, transmission: 1, roughness: 0.05, thickness: 0.5, ior: 1.33, transparent: true, opacity: 0.8 });
     const water = new THREE.Mesh(waterGeometry, waterMaterial);
     water.rotation.x = -Math.PI / 2;
     water.position.y = waterDepth;
@@ -305,45 +385,43 @@ export async function init(container) {
 
     const basinFloor = new THREE.Mesh(
         new THREE.PlaneGeometry(waterWidth, waterLength),
-        new THREE.MeshStandardMaterial({ color: 0xADD8E6 }) // hoặc vật liệu tiles
+        new THREE.MeshStandardMaterial({ color: 0xADD8E6 })
     );
     basinFloor.rotation.x = -Math.PI / 2;
-    basinFloor.position.y = 0.01; // Đặt sát đáy bể, cao hơn sàn nhà một chút
+    basinFloor.position.y = 0.2;
     poolGroup.add(basinFloor);
 
     scene.add(groundGroup);
 
     // GIAI ĐOẠN 4: ÁNH SÁNG VÀ CHI TIẾT
-    // (Code giữ nguyên)
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
     scene.add(ambientLight);
     for (let i = 0; i < 3; i++) {
         const spotLight = new THREE.SpotLight(0xffffff, 2.5, 18, Math.PI * 0.25, 0.3, 1);
         spotLight.position.set(0, roomHeight - 0.05, -roomLength / 2 + (i + 1) * (roomLength / 4));
-        spotLight.target.position.set(0, 0, spotLight.position.z); // Chiếu thẳng xuống sàn
+        spotLight.target.position.set(0, 0, spotLight.position.z);
         scene.add(spotLight);
         scene.add(spotLight.target);
 
-        // (Tùy chọn) Thêm mesh Sphere nhỏ để nhìn vị trí đèn
         const bulb = new THREE.Mesh(
-            new THREE.SphereGeometry(0.12, 16, 8),
+            new THREE.SphereGeometry(0.12, 20, 8),
             new THREE.MeshStandardMaterial({ emissive: 0xffffff, color: 0xffffee })
         );
         bulb.position.copy(spotLight.position);
         scene.add(bulb);
     }
     const decorationsGroup = new THREE.Group();
-    const planter = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.2, 1.2), materials.planter);
+    const planter = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1, 1.2), materials.planter);
     planter.position.y = 0.6;
     decorationsGroup.add(planter);
     const loader = new GLTFLoader();
     try {
-        const gltf = await loader.loadAsync('models/house_plant.glb');
+        const gltf = await loader.loadAsync('https://threejs.org/examples/models/gltf/PrimaryIonDrive.glb'); // Thay thế model
         const plantModel = gltf.scene;
-        plantModel.scale.set(1.5, 1.5, 1.5);
+        plantModel.scale.set(0.2, 0.2, 0.2); // Điều chỉnh scale cho phù hợp
         plantModel.position.y = 1.2;
         decorationsGroup.add(plantModel);
-    } catch (error) { console.error("Không thể tải model cây.", error); }
+    } catch (error) { console.error("Không thể tải model.", error); }
     decorationsGroup.position.set(-2.8, 0, roomLength / 2 - 2);
     scene.add(decorationsGroup);
 
@@ -352,11 +430,19 @@ export async function init(container) {
         new THREE.MeshStandardMaterial({color: 0xcccccc})
     );
     floorDecor.rotation.x = -Math.PI / 2;
-    floorDecor.position.x = -2.5; // lệch trái
-    floorDecor.position.y = 0.01; // nổi lên một chút
+    floorDecor.position.x = -2.5;
+    floorDecor.position.y = 0.01;
     architectureGroup.add(floorDecor);
 
-    // GIAI ĐOẠN CUỐI: VÒNG LẶP ANIMATION (ĐƠN GIẢN HÓA)
+    // MỚI: TẠO VÀ ĐẶT GIÁ TREO KHĂN
+    const towelRack = createTowelRack(materials.metalRack);
+    towelRack.position.set(-roomWidth / 2 + 0.15, 2.2, -5);
+    towelRack.rotation.y = Math.PI / 2;
+    towelRack.scale.set(1.5, 1.5, 1.5); // Làm cho nó to hơn một chút
+    scene.add(towelRack);
+
+
+    // GIAI ĐOẠN CUỐI: VÒNG LẶP ANIMATION
     window.addEventListener('resize', () => {
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
@@ -367,7 +453,6 @@ export async function init(container) {
     function animate() {
         requestAnimationFrame(animate);
 
-        // Animation cho bọt khí
         for (const bubble of bubbles) {
             bubble.position.y += bubble.userData.speed * 0.01;
             if (bubble.position.y > waterDepth - 0.05) {
@@ -381,12 +466,11 @@ export async function init(container) {
             }
         }
 
-        // Bóng nổi lắc lư (chỉ sang trái-phải ở một phía, chuyển động chậm, chìm nửa)
         const t = clock.getElapsedTime();
-        const floatCenterX = waterWidth * 0.25; // lệch về bên phải
-        const floatRange = waterWidth * 0.18;   // biên độ nhỏ
+        const floatCenterX = waterWidth * 0.25;
+        const floatRange = waterWidth * 0.18;
         ball.position.x = floatCenterX + Math.sin(t * 0.5) * floatRange;
-        ball.position.z = 0; // Giữ nguyên ở giữa theo trục z
+        ball.position.z = 0;
         ball.position.y = waterDepth + ballRadius * 0.5 + Math.sin(t * 0.7) * 0.03;
 
         controls.update();

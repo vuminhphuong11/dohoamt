@@ -1,28 +1,26 @@
 import * as THREE from 'three';
 import { OrbitControls } from '/OrbitControls.js';
 import { TeapotGeometry } from "/TeapotGeometry.js";
-
-
 export function init(container) {
     container.innerHTML = ''; // Xóa nội dung cũ
-    // Tạo Scene
+    // tạo Scene
     const scene = new THREE.Scene();
-    // Tạo Camera
+    //tạo camera
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
     camera.position.set(7, 7, 7);
     camera.lookAt(0,4,0);
-    // Tạo Renderer
+    //tạo renderer
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     container.appendChild(renderer.domElement);
-    // Điều khiển camera bằng chuột
+    // điều khiển camera bằng chuột(orbitcontrol trong three)
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
     controls.target.set(0, 0.5, 0);
     controls.update();
-    // Ánh sáng
+    // thêm ánh sáng
     const light = new THREE.AmbientLight(0xffffff, 1);
     scene.add(light);
     const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
@@ -30,10 +28,10 @@ export function init(container) {
     scene.add(directionalLight);
     // ================Sàn nhà===============
     const texLoader = new THREE.TextureLoader()
-    // 1. Wooden floor
-    const woodTex = texLoader.load('wood.jpg')
+    // thêm sàn nhà
+    const woodTex = texLoader.load('sannha1.jpg')
     woodTex.wrapS = woodTex.wrapT = THREE.RepeatWrapping
-    woodTex.repeat.set(3, 3)
+    woodTex.repeat.set(4, 4)
     const floor = new THREE.Mesh(
         new THREE.PlaneGeometry(13, 13),
         new THREE.MeshStandardMaterial({ map: woodTex })
@@ -42,7 +40,10 @@ export function init(container) {
     floor.receiveShadow = true
     scene.add(floor)
     // =================Tường===============
-    const wallMaterial = new THREE.MeshStandardMaterial({ color: 0xCCCCCC});
+    const wallMaterial = new THREE.MeshStandardMaterial({ 
+        color: 0xCCCCCC, 
+        side: THREE.DoubleSide 
+    });
     const wallGeometry = new THREE.PlaneGeometry(13, 6.5);
     const frontWall = new THREE.Mesh(wallGeometry, wallMaterial);
     frontWall.position.set(0,3.25, -6.5);
@@ -178,12 +179,12 @@ export function init(container) {
     const knobMaterial = new THREE.MeshStandardMaterial({ color: 0x999999, roughness: 0.3, metalness: 0.6 });
     const woodMaterial = new THREE.MeshStandardMaterial({ color: 0xdeb887, roughness: 0.6, metalness: 0.2 });
     const tvStand = new THREE.Group();
-    // Main table surface
+    // mặt tủ trên cùng
     const topGeometry = new THREE.BoxGeometry(4, 0.2, 1);
     const topMesh = new THREE.Mesh(topGeometry, woodMaterial);
     topMesh.position.set(0, 1, 0);
     tvStand.add(topMesh);
-    // Left and Right Cabinets cụ thể là thêm cái tấm cửa màu trắng
+    //  hai cái hộp bên cạnh
     const cabinetGeometry = new THREE.BoxGeometry(1.2, 0.8, 1);
     const leftCabinet = new THREE.Mesh(cabinetGeometry, woodMaterial);
     leftCabinet.position.set(-1.4, 0.4, 0);
@@ -191,7 +192,7 @@ export function init(container) {
     const rightCabinet = new THREE.Mesh(cabinetGeometry, woodMaterial);
     rightCabinet.position.set(1.4, 0.4, 0);
     tvStand.add(rightCabinet);
-    // Cabinet Doors
+    // cửa
     const doorGeometry = new THREE.PlaneGeometry(1.1, 0.7);
     const leftDoor = new THREE.Mesh(doorGeometry, doorMaterial);
     leftDoor.position.set(-1.4, 0.4, 0.51);
@@ -199,7 +200,7 @@ export function init(container) {
     const rightDoor = new THREE.Mesh(doorGeometry, doorMaterial);
     rightDoor.position.set(1.4, 0.4, 0.51);
     tvStand.add(rightDoor);
-    // Door Knobs
+    // tay đấm cửa tủ
     const knobGeometry = new THREE.SphereGeometry(0.05, 16, 16);
     const leftKnob = new THREE.Mesh(knobGeometry, knobMaterial);
     leftKnob.position.set(-1.15, 0.4, 0.55);
@@ -207,17 +208,17 @@ export function init(container) {
     const rightKnob = new THREE.Mesh(knobGeometry, knobMaterial);
     rightKnob.position.set(1.15, 0.4, 0.55);
     tvStand.add(rightKnob);
-    // Middle Shelf
+    // tấm nói ở giữa các hộp
     const middleShelfGeometry = new THREE.BoxGeometry(1.7, 0.1, 0.8);
     const middleShelf = new THREE.Mesh(middleShelfGeometry, woodMaterial);
     middleShelf.position.set(0, 0.6, 0);
     tvStand.add(middleShelf);
-    // Base
+    // kê
     const baseGeometry = new THREE.BoxGeometry(4, 0.2, 1);
     const baseMesh = new THREE.Mesh(baseGeometry, woodMaterial);
     baseMesh.position.set(0, 0.1, 0);
     tvStand.add(baseMesh);
-    // Support Columns (Connecting Top Surface to Cabinets)
+    //nối các hộp với nhau
     const supportGeometry = new THREE.BoxGeometry(0.2, 0.4, 0.7);
     const leftSupport = new THREE.Mesh(supportGeometry, woodMaterial);
     leftSupport.position.set(-1.4, 0.8, 0);
@@ -228,7 +229,14 @@ export function init(container) {
     tvStand.position.set(1.5,0,-5.93);
     scene.add(tvStand);
     //=========bình hoa cỡ lớn trang trí==============
-    const vaseMaterial = new THREE.MeshStandardMaterial({ color: 0xF5DEB3, roughness: 0.5,metalness: 0.05,side: THREE.DoubleSide});
+    const textureLoader = new THREE.TextureLoader();
+    const patternTexture = textureLoader.load('wood.jpg');
+    const vaseMaterial = new THREE.MeshStandardMaterial({
+        map: patternTexture,
+        roughness: 0.5,
+        metalness: 0.05,
+        side: THREE.DoubleSide,
+    });
     const vasePoints = [
         new THREE.Vector2(0.5, 0.0),new THREE.Vector2(0.4, 0.05),new THREE.Vector2(0.35, 0.17),
         new THREE.Vector2(0.33, 0.22),new THREE.Vector2(0.33, 0.27),new THREE.Vector2(0.35, 0.32),
@@ -249,7 +257,7 @@ export function init(container) {
     const bottomGeometry = new THREE.CircleGeometry(0.5, 64); // cùng bán kính đáy
     const bottom = new THREE.Mesh(bottomGeometry, vaseMaterial);
     bottom.rotation.x = -Math.PI / 2; // úp xuống trục Y
-    bottom.position.y = 0; // trùng với đáy bình
+    bottom.position.y = 0; // trùng với đáy bình để mà tạo đáy cho bình hoa
     const vaseGroup = new THREE.Group();
     vaseGroup.add(vase);
     vaseGroup.add(bottom);
@@ -302,11 +310,11 @@ export function init(container) {
     clockFace.position.set(0, 3, -5); 
     clockFace.rotation.x = Math.PI / 2; 
     clockGroup.add(clockFace);
-    // === Nhóm chứa kim & vạch số ===
+    // === Nhóm chứa kim, vạch số===
     const clockDetails = new THREE.Group();
     clockDetails.position.copy(clockFace.position); 
     clockGroup.add(clockDetails);
-    // Tạo một tick 
+    //tạo một tick 
     const tickMaterial = new THREE.MeshStandardMaterial({ color: 0x000000 });
     const tickLength = 0.05; 
     const tickDepth = 0.01;
@@ -315,7 +323,7 @@ export function init(container) {
     const baseTick = new THREE.Mesh(tickGeometry, tickMaterial);
     const tickGroup = new THREE.Group();
     tickGroup.add(baseTick);
-    // Tạo 12 tick quay tròn đều quanh mặt đồng hồ
+    //tạo 12 tick quay tròn đều quanh mặt đồng hồ
     for (let i = 0; i < 12; i++) {
         const angle = (i / 12) * Math.PI * 2;
         const x = Math.cos(angle) * clockRadius * 0.9; 
@@ -379,5 +387,22 @@ export function init(container) {
         renderer.render(scene, camera);
     }
     animate();
+    // 11. Add audio
+    const listener = new THREE.AudioListener()
+    camera.add(listener)
+    const sound = new THREE.Audio(listener)
+    const audioLoader = new THREE.AudioLoader()
+
+    audioLoader.load('/laugos_overlook_montage_-_loop.mp3', (buffer) => {
+        sound.setBuffer(buffer)
+        sound.setLoop(true) // lặp lại
+        sound.setVolume(0.5)
+        sound.play()
+    }, 
+        (progress) => {
+        console.log(`Audio: ${(progress.loaded / progress.total * 100).toFixed(1)}% loaded`)
+        },
+        (err) => console.error('Error loading ambient.mp3:', err)
+    )
     
 }

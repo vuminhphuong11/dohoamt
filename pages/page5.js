@@ -1,3 +1,4 @@
+//AUTHOR: VŨ MINH HIỂN - ID: 20224311
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.163.0/build/three.module.js';
 
 // Khởi tạo scene, camera và renderer

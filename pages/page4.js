@@ -36,7 +36,7 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
 // === Add Lights ===
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.2);
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
 scene.add(ambientLight);
 
 // === Create Materials ===
@@ -243,6 +243,44 @@ cuttingBoard.castShadow = true;
 cuttingBoard.receiveShadow = true;
 scene.add(cuttingBoard);
 
+// === Materials ===
+const bladeMaterial = new THREE.MeshStandardMaterial({
+  color: 0xcccccc,
+  metalness: 0.9,
+  roughness: 0.2
+});
+const handleMaterial = new THREE.MeshStandardMaterial({
+  color: 0x111111,
+  roughness: 0.6
+});
+
+// === Knife Blade ===
+// Straight bottom with a curved top
+const bladeShape = new THREE.Shape();
+bladeShape.moveTo(0, 0);
+bladeShape.lineTo(0, 0.1); // Back of blade
+bladeShape.quadraticCurveTo(0.25, 0.2, 0.5, 0.1); // Curved top
+bladeShape.lineTo(0.5, 0); // Straight bottom
+bladeShape.lineTo(0, 0);   // Close path
+
+const extrudeSettings = {
+  depth: 0.02,
+  bevelEnabled: false
+};
+
+const KnifeBladeGeometry = new THREE.ExtrudeGeometry(bladeShape, extrudeSettings);
+const KnifeBlade = new THREE.Mesh(KnifeBladeGeometry, bladeMaterial);
+KnifeBlade.rotation.x = -Math.PI / 2;
+KnifeBlade.position.set(3.7, 1.75, -3);
+scene.add(KnifeBlade);
+
+// === Knife Handle ===
+const KnifeHandleGeometry = new THREE.BoxGeometry(0.3, 0.05, 0.05);
+const KnifeHandle = new THREE.Mesh(KnifeHandleGeometry, handleMaterial);
+KnifeHandle.position.set(3.55, 1.75, -3.05);
+scene.add(KnifeHandle);
+
+
     // fridge
     function createModernWhiteFridge() {
       const fridge = new THREE.Group();
@@ -326,23 +364,82 @@ const basinRightEdge = new THREE.Mesh(
 basinRightEdge.position.set(3.45 - wallThickness / 2, 1.5 + wallHeight / 2, -4.55);
 scene.add(basinRightEdge);
 
-const loader = new GLTFLoader();
-
-loader.load('models/faucet_2.glb', (gltf) => {
-  const faucet = gltf.scene;
-
-  faucet.scale.set(0.1, 0.1, 0.1);
-  faucet.position.set(0, 3, 0);
-
-  faucet.traverse((child) => {
-    if (child.isMesh) {
-      child.castShadow = true;
-      child.receiveShadow = true;
-    }
-  });
-
-  scene.add(faucet);
+// === Faucet Material ===
+const faucetMaterial = new THREE.MeshStandardMaterial({
+  color: 0xaaaaaa,
+  metalness: 1.0,
+  roughness: 0.3
 });
+
+// === Vertical Pipe ===
+const verticalPipe = new THREE.Mesh(
+  new THREE.CylinderGeometry(0.02, 0.02, 0.4, 32),
+  faucetMaterial
+);
+verticalPipe.position.set(3, 1.775, -4.875); // Just above base
+verticalPipe.rotation.y = Math.PI / 2;
+scene.add(verticalPipe);
+
+// === Curved Neck ===
+const faucetNeckCurve = new THREE.QuadraticBezierCurve3(
+  new THREE.Vector3(3, 1.975, -4.875),
+  new THREE.Vector3(3, 2.275, -4.725),
+  new THREE.Vector3(3, 1.975, -4.575)
+);
+const neckTube = new THREE.Mesh(
+  new THREE.TubeGeometry(faucetNeckCurve, 20, 0.02, 8, false),
+  faucetMaterial
+);
+scene.add(neckTube);
+
+// === Spout End ===
+const spout = new THREE.Mesh(
+  new THREE.CylinderGeometry(0.015, 0.015, 0.04, 16),
+  faucetMaterial
+);
+spout.rotation.x = Math.PI / 2;
+spout.position.set(3, 1.975, -4.555); // At the end of the curve
+scene.add(spout);
+
+// === Handle ===
+const Faucethandle = new THREE.Mesh(
+  new THREE.BoxGeometry(0.08, 0.01, 0.01),
+  faucetMaterial
+);
+Faucethandle.position.set(2.95, 1.62, -4.875); 
+scene.add(Faucethandle);
+
+const FaucetwaterMaterial = new THREE.MeshStandardMaterial({
+  color: 0x66ccff,
+  transparent: true,
+  opacity: 0.6,
+  roughness: 0.2,
+  metalness: 0.1
+});
+
+const waterCurve = new THREE.QuadraticBezierCurve3(
+  new THREE.Vector3(3, 1.975, -4.555), 
+  new THREE.Vector3(3, 1.7, -4.55),    
+  new THREE.Vector3(3, 1.45, -4.55)    
+);
+
+const waterStream = new THREE.Mesh(
+  new THREE.TubeGeometry(waterCurve, 20, 0.015, 8, false),
+  FaucetwaterMaterial
+);
+scene.add(waterStream);
+
+// === Water Stream Sound ===
+const waterSound = new THREE.PositionalAudio(audioListener);
+const StreamaudioLoader = new THREE.AudioLoader();
+StreamaudioLoader.load('sounds/faucet.mp3', function(buffer) {
+  waterSound.setBuffer(buffer);
+  waterSound.setLoop(true);
+  waterSound.setVolume(0.4);
+  waterSound.setRefDistance(0.5);
+  waterSound.play();
+});
+spout.add(waterSound);
 
 
 // Add fan
@@ -369,7 +466,7 @@ scene.add(bulbBase);
 
 const bulbGeometry = new THREE.SphereGeometry(0.18, 16, 64);
 const bulbMaterial = new THREE.MeshPhysicalMaterial({
-  color: 0xffffa0, // Warm yellow tint
+  color: 0xfffff0, // Warm yellow tint
   transparent: true,
   opacity: 0.9,
   transmission: 0.95, // High transmission for glass-like effect
@@ -385,7 +482,7 @@ bulb.position.set(4.65, 3.8, -1.5);
 scene.add(bulb);
 
 // Update PointLight
-const bulbLight = new THREE.PointLight(0xffffa0, 4, 25, 1);
+const bulbLight = new THREE.PointLight(0xfffff0, 5, 25, 1);
 bulbLight.position.set(4, 3.8, -1.5);
 bulbLight.castShadow = true;
 bulbLight.shadow.mapSize.set(2048, 2048);
@@ -560,7 +657,6 @@ handle.castShadow = true;
 handle.receiveShadow = true;
 panGroup.add(handle);
 
-// Position entire pan group above the burner
 panGroup.position.set(4.35, 1.835, -2.2);
 scene.add(panGroup);
 
@@ -575,7 +671,7 @@ audioLoader.load('sounds/sizzlingSound.mp3', function(buffer) {
   sizzleSound.play();
 });
 
-// Attach to pan group so it follows pan position
+// Attach to pan group
 panGroup.add(sizzleSound);
 
 // Stock pot on right burner
@@ -612,7 +708,7 @@ boilingLoader.load('sounds/boiling.mp3', (buffer) => {
   boilingSound.setBuffer(buffer);
   boilingSound.setRefDistance(1);  // Audible range
   boilingSound.setLoop(true);
-  boilingSound.setVolume(2);     // Adjust volume as needed
+  boilingSound.setVolume(2);     // Adjust volume
   boilingSound.play();
 });
 
